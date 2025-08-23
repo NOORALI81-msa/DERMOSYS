@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div class="main-container">
+    <div class="form-content">
+        <h2 class="form-title">New Patient Vitals Form</h2>
+        <form method="post" action="{{ url_for('register_patient') }}" autocomplete="off">
+            <div class="form-column">
+                <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+                <div class="form-group">
+                    <input type="text" name="name" required placeholder="Full Name">
+                    <i class="icon fas fa-user"></i>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="age" required placeholder="Age">
+                    <i class="icon fas fa-birthday-cake"></i>
+                </div>
+                <div class="form-group">
+                    <select name="gender" required>
+                        <option value="" disabled selected>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <i class="icon fas fa-venus-mars"></i>
+                </div>
+                <div class="form-group">
+                    <input type="tel" name="phone_number" placeholder="Mobile Number">
+                    <i class="icon fas fa-phone"></i>
+                </div>
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="Email Address">
+                    <i class="icon fas fa-envelope"></i>
+                </div>
+            </div>
+
+            <div class="form-column">
+                <h3><i class="fas fa-heartbeat"></i> Vital Signs</h3>
+                <div class="form-group">
+                    <input type="number" step="0.1" name="temp" required placeholder="Temperature (°C)">
+                    <i class="icon fas fa-thermometer-half"></i>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="bp_sys" required placeholder="Systolic BP (e.g., 120)">
+                    <i class="icon fas fa-tint"></i>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="bp_dia" required placeholder="Diastolic BP (e.g., 80)">
+                    <i class="icon fas fa-tint"></i>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="sugar" required placeholder="Blood Sugar (mg/dL)">
+                    <i class="icon fas fa-cookie-bite"></i>
+                </div>
+                <div class="form-group">
+                    <input type="number" step="0.1" name="height" required placeholder="Height (cm)">
+                    <i class="icon fas fa-ruler-vertical"></i>
+                </div>
+                <div class="form-group">
+                    <input type="number" step="0.1" name="weight" required placeholder="Weight (kg)">
+                    <i class="icon fas fa-weight"></i>
+                </div>
+            </div>
+
+            <div class="form-column">
+                <div class="add-container">
+                    <h3><i class="fas fa-file-medical"></i>Laboratory Values</h3>
+                    <button type="button" id="add-more-btn" class="add-icon-btn">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                </div>
+                <div id="additional-vitals-container">
+                    </div>
+            </div>
+            
+            <div class="form-column">
+                <h3><i class="fas fa-calendar-alt"></i> Record Information</h3>
+                <div class="form-group">
+                    <input type="text" id="recordDateDisplay" readonly>
+                    <input type="hidden" id="recordDateValue" name="record_date">
+                    <i class="icon fas fa-calendar-check"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-button"><i class="fas fa-save"></i> Save Patient Record</button>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == 'danger' or category == 'error' %}
+                            <div class="flash-error">{{ message }}</div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Set the record date to today
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    const recordDateDisplayInput = document.getElementById('recordDateDisplay');
+    const recordDateValueInput = document.getElementById('recordDateValue');
+
+    if(recordDateDisplayInput && recordDateValueInput) {
+        const formattedDate = `${year}-${month}-${day}`;
+        recordDateDisplayInput.value = formattedDate;
+        recordDateValueInput.value = formattedDate;
+    }
+
+    // Handle adding and removing new input fields
+    const addMoreBtn = document.getElementById('add-more-btn');
+    const container = document.getElementById('additional-vitals-container');
+
+    if (addMoreBtn && container) {
+        let fieldCount = 0;
+        addMoreBtn.addEventListener('click', function() {
+            fieldCount++;
+            const newRow = document.createElement('div');
+            newRow.className = 'add-more-container';
+
+            const vitalNameInput = document.createElement('div');
+            vitalNameInput.className = 'form-group';
+            vitalNameInput.innerHTML = `<input type="text" name="vital_name_${fieldCount}" placeholder="Parameter Name" required>`;
+
+            const vitalValueInput = document.createElement('div');
+            vitalValueInput.className = 'form-group';
+            vitalValueInput.innerHTML = `<input type="text" name="vital_value_${fieldCount}" placeholder="Value" required>`;
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'remove-icon-btn';
+            removeButton.innerHTML = `<i class="fas fa-times-circle"></i>`;
+            removeButton.addEventListener('click', function() {
+                newRow.remove();
+            });
+
+            newRow.appendChild(vitalNameInput);
+            newRow.appendChild(vitalValueInput);
+            newRow.appendChild(removeButton);
+
+            container.appendChild(newRow);
+        });
+    }
+});
+</script>
+{% endblock %}

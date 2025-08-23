@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    
+
+<div class="form-container">
+    <h1>Create Prescription</h1>
+    <form method="POST">
+        <div class="form-group">
+            <label for="patient_id">Select Patient</label>
+            <select name="patient_id" id="patient_id" required>
+                <option value="">-- Please select a patient --</option>
+                {% for patient in patients %}
+                    <option value="{{ patient.id }}">{{ patient.patient_code }} - {{ patient.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- NEW: Text box for condition notes -->
+        <div class="form-group">
+            <label for="condition_notes">Condition / Notes</label>
+            <textarea name="condition_notes" id="condition_notes" placeholder="e.g., Acute Psoriasis Flare-up on elbows and knees..."></textarea>
+        </div>
+
+        <hr style="margin: 30px 0;">
+        
+        <h2>Medications</h2>
+        <div id="medications-container">
+            <!-- Medication items will be added here by JavaScript -->
+        </div>
+
+        <button type="button" class="btn btn-add-med" onclick="addMedicationRow()">
+            <i class="fa-solid fa-plus"></i> Add Medication
+        </button>
+
+        <button type="submit" class="btn btn-submit">Save Prescription</button>
+    </form>
+</div>
+
+<script>
+    let medIndex = 0;
+
+    function addMedicationRow() {
+        const container = document.getElementById('medications-container');
+        const medItem = document.createElement('div');
+        medItem.className = 'medication-item';
+        medItem.id = `med-row-${medIndex}`;
+
+        medItem.innerHTML = `
+            <input list="medication-list" name="med_name_${medIndex}" placeholder="Medication Name" required>
+            <input type="text" name="med_dosage_${medIndex}" placeholder="Dosage (e.g., 50mg)">
+            <input type="text" name="med_frequency_${medIndex}" placeholder="Frequency (e.g., 1-0-1)"><br/>
+            <input type="text" name="med_duration_${medIndex}" placeholder="Duration (e.g., 15 days)"><br/>
+            <input type="text" name="med_notes_${medIndex}" placeholder="Notes (e.g., After food)">
+            <button type="button" class="btn btn-remove-med" onclick="removeMedicationRow(${medIndex})">&times;</button>
+        `;
+
+        container.appendChild(medItem);
+        medIndex++;
+    }
+
+    function removeMedicationRow(index) {
+        const row = document.getElementById(`med-row-${index}`);
+        if (row) {
+            row.remove();
+        }
+    }
+    addMedicationRow();
+</script>
+
+<datalist id="medication-list">
+    {% for med in medications %}
+        <option value="{{ med.name }}">
+    {% endfor %}
+</datalist>
+{% endblock %}

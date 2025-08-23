@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create User - DermoSys</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        {% if initial_setup %}
+            <h2><i class="fas fa-user-shield"></i> Register Administrator</h2>
+            <p class="subtitle">Create the first account for this system.</p>
+        {% else %}
+            <h2><i class="fas fa-user-plus"></i> New User Registration</h2>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                     <p class="flash-message-{{ category }}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('register') if initial_setup else url_for('register_user') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            {% if not initial_setup %}
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            <div class="form-group">
+                <label for="role">Select Role</label>
+                <select id="role" name="role_id" required>
+                    <option value="" disabled selected>-- Select a Role --</option>
+                    <option value="1">Admin</option>
+                    <option value="2">Doctor</option>
+                    <option value="3">Staff</option>
+                </select>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn-submit">
+                {% if initial_setup %}
+                    Create Admin Account
+                {% else %}
+                    <i class="fas fa-check-circle"></i> Create User
+                {% endif %}
+            </button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .page-header { margin-bottom: 20px; }
+    .search-form { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 15px; }
+    .search-form input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    .btn { background-color: var(--highlight-color); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+    .tab-container { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+    .tab-link { padding: 15px 25px; cursor: pointer; border: none; background-color: transparent; font-size: 1.1em; font-weight: 600; color: #888; position: relative; }
+    .tab-link.active { color: var(--primary-color); }
+    .tab-content { display: none; }
+    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+    .image-card { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden; }
+    .image-card img { width: 100%; height: 200px; object-fit: cover; display: block; }
+    .image-info { padding: 15px; }
+    .image-info h3 { margin: 0 0 5px 0; }
+    .image-info p { margin: 0; color: #555; }
+    .image-info a { color: var(--highlight-color); text-decoration: none; font-weight: bold; }
+</style>
+
+<div class="page-header">
+    <h1>Diagnostic Center</h1>
+</div>
+
+<form method="GET" class="search-form">
+    <input type="text" name="search" placeholder="Search by patient name or ID..." value="{{ search_query or '' }}">
+    <button type="submit" class="btn">Search</button>
+</form>
+
+<div class="tab-container">
+    <button class="tab-link active" onclick="openTab(event, 'DiagnosticReports')">Diagnostic Reports</button>
+    <button class="tab-link" onclick="openTab(event, 'ClinicalPhotos')">Clinical images</button>
+</div>
+
+<div id="DiagnosticReports" class="tab-content" style="display: block;">
+    <div class="image-grid">
+        {% for report in diagnostic_reports %}
+        <div class="image-card">
+            <a href="{{ url_for('uploaded_file', filename=report.image_filename) }}" target="_blank">
+                <img src="{{ url_for('uploaded_file', filename=report.image_filename) }}" alt="Diagnostic Image">
+            </a>
+            <div class="image-info">
+                <h3>{{ report.report_type }}</h3>
+                <p>Patient: <a href="{{ url_for('patient_detail', patient_id=report.patient_id) }}">{{ report.patient_name }}</a></p>
+                <p>Date: {{ report.report_date.strftime('%d %b %Y') }}</p>
+            </div>
+        </div>
+        {% else %}
+        <p>No diagnostic reports with images found.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="ClinicalPhotos" class="tab-content">
+    <div class="image-grid">
+        {% for image in clinical_photos %}
+        <div class="image-card">
+            <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
+                <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Clinical Photo">
+            </a>
+            <div class="image-info">
+                <h3>Clinical Photo</h3>
+                <p>Patient: <a href="{{ url_for('patient_detail', patient_id=image.patient_id) }}">{{ image.patient_name }}</a></p>
+                <p>Date: {{ image.upload_date.strftime('%d %b %Y') }}</p>
+            </div>
+        </div>
+        {% else %}
+        <p>No clinical photos found.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        let i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+        tablinks = document.getElementsByClassName("tab-link");
+        for (i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.classList.add("active");
+    }
+</script>
+{% endblock %}

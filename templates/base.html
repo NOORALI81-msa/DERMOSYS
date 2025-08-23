@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}DermoSys{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mainD.css') }}">
+</head>
+<body>
+    <div class="sidebar-overlay"></div>
+    <button class="menu-toggle" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3><img src="{{ url_for('uploaded_file', filename='logo1.png') }}" alt="logo1" style="height: 50px;  width: 40px; border-radius: 50%;"> DermoSys</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="{{ 'active' if 'dashboard' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-chart-pie"></i> Dashboard</a>
+                <a href="{{ url_for('list_patients') }}" class="{{ 'active' if 'list_patients' in request.endpoint or 'patient_detail' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-hospital-user"></i> Patients</a>
+                <a href="{{ url_for('patient_visit') }}" class="{{ 'active' if 'patient_visit' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-notes-medical"></i> Patient Visit</a>
+                <a href="{{ url_for('create_prescription') }}" class="{{ 'active' if 'create_prescription' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-pills"></i> New Prescription</a>
+                <a href="{{ url_for('bed_management') }}" class="{{ 'active' if 'bed_management' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-bed-pulse"></i> Bed Mgt</a>
+                <a href="{{ url_for('list_lab_reports') }}" class="{{ 'active' if 'list_lab_reports' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-flask-vial"></i> Diagnostic Reports</a>
+                <li><a href="{{ url_for('diagnostic_center') }}"><i class="fa-solid fa-fw fa-images"></i> Diagnostic Center</a></li>
+                <a href="{{ url_for('list_consultations') }}" class="{{ 'active' if 'list_consultations' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-user-group"></i> Consultations</a>
+                {% if session.get('role_id') == 1 %}
+                <a href="{{ url_for('register_user') }}" class="{{ 'active' if 'register_user' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-user-plus"></i> Add User</a>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}<div class="flash-container">{% for category, message in messages %}<div class="flash-message {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+
+            function closeMenu() {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+            }
+
+            if (menuToggle && sidebar) {
+                menuToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('open');
+                    overlay.classList.toggle('active');
+                });
+                overlay.addEventListener('click', closeMenu);
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
