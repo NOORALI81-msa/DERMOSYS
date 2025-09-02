@@ -2,8 +2,6 @@
 
 {% block content %}
 
-    
-
 <div class="form-container">
     <h1>Create Prescription</h1>
     <form method="POST">
@@ -17,7 +15,11 @@
             </select>
         </div>
 
-        <!-- NEW: Text box for condition notes -->
+        <div class="form-group">
+            <label for="next_follow_up_date">Next Follow-up Date</label>
+            <input type="date" id="next_follow_up_date" name="next_follow_up_date">
+        </div>
+
         <div class="form-group">
             <label for="condition_notes">Condition / Notes</label>
             <textarea name="condition_notes" id="condition_notes" placeholder="e.g., Acute Psoriasis Flare-up on elbows and knees..."></textarea>
@@ -37,6 +39,12 @@
         <button type="submit" class="btn btn-submit">Save Prescription</button>
     </form>
 </div>
+
+<datalist id="medication-list">
+    {% for med in medications %}
+        <option value="{{ med.name }}">
+    {% endfor %}
+</datalist>
 
 <script>
     let medIndex = 0;
@@ -66,12 +74,7 @@
             row.remove();
         }
     }
-    addMedicationRow();
+    // Add one row by default when the page loads
+    window.onload = addMedicationRow;
 </script>
-
-<datalist id="medication-list">
-    {% for med in medications %}
-        <option value="{{ med.name }}">
-    {% endfor %}
-</datalist>
 {% endblock %}

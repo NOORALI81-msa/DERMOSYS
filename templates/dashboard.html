@@ -2,13 +2,213 @@
 
 {% block content %}
 <style>
+    /* General Styles & Variables */
+    :root {
+        --primary-color: #090c0e;
+        --danger-color: #e74c3c;
+        --success-color: #2ecc71;
+        --warning-color: #f39c12;
+        --card-bg: #ffffff;
+        --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --border-radius: 12px;
+    }
+
+    /* KPI Cards Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    .stat-card {
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .stat-card .icon {
+        font-size: 2em;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .stat-card .info h3 {
+        margin: 0;
+        font-size: 2em;
+        color: #333;
+    }
+
+    .stat-card .info p {
+        margin: 0;
+        color: #777;
+    }
+
+    .icon.patients { background-color: var(--primary-color); }
+    .icon.beds { background-color: var(--success-color); }
+    .icon.reports { background-color: var(--warning-color); }
+    .icon.missed { background-color: var(--danger-color); }
+
+    /* Charts Grid */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .chart-container-large {
+        grid-column: 1 / -1;
+    }
+
+    @media (max-width: 992px) {
+        .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    /* User Management Section */
+    .user-management-section {
+        background: var(--card-bg);
+        padding: 25px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        margin-top: 30px;
+    }
+
+    .user-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 20px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .user-list li {
+        display: flex;
+        align-items: center;
+        padding: 15px 10px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s;
+    }
+     .user-list li:hover {
+        background-color: #f9f9f9;
+    }
+    .user-list li:last-child { border-bottom: none; }
+
+    .user-info {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-info i {
+        color: var(--primary-color);
+        font-size: 1.4em;
+    }
+
+    .user-name-link {
+        color: #333;
+        text-decoration: none;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .user-name-link:hover {
+        color: var(--primary-color);
+        text-decoration: underline;
+    }
+
+    .user-role {
+        font-size: 0.85em;
+        color: #555;
+        background-color: #e9ecef;
+        padding: 4px 10px;
+        border-radius: 15px;
+    }
+
+    .user-time {
+        margin-left: auto;
+        color: #555;
+        font-size: 0.9em;
+    }
     
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        padding: 25px;
+        border-radius: var(--border-radius);
+        width: 90%;
+        max-width: 750px;
+        position: relative;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .close-button {
+        color: #aaa;
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .close-button:hover { color: #333; }
+
+    #modalBody {
+        max-height: 65vh;
+        overflow-y: auto;
+        margin-top: 20px;
+    }
+
+    .activity-item {
+        border-bottom: 1px solid #eee;
+        padding: 12px 5px;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-type { font-weight: bold; color: var(--primary-color); }
+    .activity-date { font-size: 0.85em; color: #777; float: right; }
+    .activity-item a { color: #333; text-decoration: none; display: block; margin-top: 4px;}
+    .activity-item a:hover { text-decoration: underline; }
 </style>
 
 <div class="page-header">
-    <h1>Dashboard</h1>
+    <h1>Clinical Dashboard</h1>
 </div>
 
+<!-- KPIs -->
 <div class="stats-grid">
     <a href="{{ url_for('list_patients') }}" class="stat-card">
         <div class="icon patients"><i class="fa-solid fa-hospital-user"></i></div>
@@ -20,7 +220,7 @@
     <a href="{{ url_for('bed_management') }}" class="stat-card">
         <div class="icon beds"><i class="fa-solid fa-bed-pulse"></i></div>
         <div class="info">
-            <h3>{{ stats.occupied_beds }} / {{ stats.total_beds }}</h3>
+            <h3>{{ stats.occupied_beds }}/{{ stats.total_beds }}</h3>
             <p>Occupied Beds</p>
         </div>
     </a>
@@ -28,19 +228,19 @@
         <div class="icon reports"><i class="fa-solid fa-flask-vial"></i></div>
         <div class="info">
             <h3>{{ stats.pending_reports }}</h3>
-            <p>Pending Lab Reports</p>
+            <p>Pending Reports</p>
         </div>
     </a>
-    <a href="{{ url_for('list_follow_up_visits') }}" class="stat-card">
-        <div class="icon visits"><i class="fa-solid fa-stethoscope"></i></div>
+    <a href="{{ url_for('missed_follow_ups') }}" class="stat-card">
+        <div class="icon missed"><i class="fa-solid fa-calendar-times"></i></div>
         <div class="info">
-            <h3>{{ stats.follow_up_visits }}</h3>
-            <p>Follow-up Visits</p>
+            <h3>{{ stats.missed_follow_ups }}</h3>
+            <p>Missed Follow-ups</p>
         </div>
     </a>
 </div>
 
-<!-- Charts Section -->
+<!-- Charts -->
 <div class="charts-grid">
     <div class="chart-container">
         <h2>Disease Frequency</h2>
@@ -50,67 +250,139 @@
         <h2>Gender Distribution</h2>
         <canvas id="genderChart"></canvas>
     </div>
+    <div class="chart-container chart-container-large">
+        <h2>Patient Registrations (Last 7 Days)</h2>
+        <canvas id="registrationChart"></canvas>
+    </div>
 </div>
 
-<!-- Hidden data for charts -->
+<!-- User Management -->
+{% if session.get('role_id') == 1 %}
+<div class="user-management-section">
+    <h2><i class="fa-solid fa-users-cog"></i> User Management</h2>
+    <ul class="user-list">
+        {% for user in all_users %}
+        <li>
+            <div class="user-info">
+                <i class="fas fa-user-circle" style="color: {{ '#c0392b' if not user.is_active else '#3498db' }};"></i>
+                <a class="user-name-link" data-user-id="{{ user.id }}" data-username="{{ user.username }}">{{ user.username }}</a>
+                <span class="user-role">{{ user.role_name | capitalize }}</span>
+            </div>
+            <div class="user-time" title="Active Hours Today">
+                <i class="fas fa-clock"></i> {{ user.active_time_str }}
+            </div>
+            {% if user.id != session.get('user_id') %}
+            <form action="{{ url_for('toggle_user_status', user_id=user.id) }}" method="POST" style="margin-left:20px;">
+                <button type="submit" class="btn btn-sm {{ 'btn-success' if not user.is_active else 'btn-danger' }}">
+                    {{ 'Activate' if not user.is_active else 'Deactivate' }}
+                </button>
+            </form>
+            {% endif %}
+        </li>
+        {% else %}
+        <li><p style="padding: 10px;">No users found.</p></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- User Activity Modal -->
+<div id="activityModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2 id="modalTitle">User Activity</h2>
+        <div id="modalBody"><p>Loading activity...</p></div>
+    </div>
+</div>
+
 <script type="application/json" id="diseaseData">{{ disease_data | tojson }}</script>
 <script type="application/json" id="genderData">{{ gender_data | tojson }}</script>
-
-<!-- Chart.js Library -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        // Disease Frequency Chart (Bar Chart)
-        const diseaseData = JSON.parse(document.getElementById('diseaseData').textContent);
-        const diseaseCtx = document.getElementById('diseaseChart').getContext('2d');
-        new Chart(diseaseCtx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(diseaseData),
-                datasets: [{
-                    label: 'Number of Cases',
-                    data: Object.values(diseaseData),
-                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true }
-                },
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
+document.addEventListener("DOMContentLoaded", () => {
+    // Chart Logic
+    const createChart = (ctx, type, data, options) => new Chart(ctx, { type, data, options });
 
-        // Gender Distribution Chart (Doughnut Chart)
-        const genderData = JSON.parse(document.getElementById('genderData').textContent);
-        const genderCtx = document.getElementById('genderChart').getContext('2d');
-        new Chart(genderCtx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(genderData),
-                datasets: [{
-                    data: Object.values(genderData),
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.8)',
-                        'rgba(231, 76, 60, 0.8)',
-                        'rgba(155, 89, 182, 0.8)'
-                    ],
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
+    const diseaseData = JSON.parse(document.getElementById('diseaseData').textContent);
+    if (Object.keys(diseaseData).length > 0) {
+        createChart(document.getElementById('diseaseChart').getContext('2d'), 'bar', {
+            labels: Object.keys(diseaseData),
+            datasets: [{ label: 'Cases', data: Object.values(diseaseData), backgroundColor: 'rgba(52, 152, 219, 0.7)' }]
+        }, { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } });
+    }
+
+    const genderData = JSON.parse(document.getElementById('genderData').textContent);
+    if (Object.keys(genderData).length > 0) {
+        createChart(document.getElementById('genderChart').getContext('2d'), 'doughnut', {
+            labels: Object.keys(genderData),
+            datasets: [{ data: Object.values(genderData), backgroundColor: ['#3498db', '#e74c3c', '#9b59b6'] }]
+        });
+    }
+
+    // Fetch and create Registration Chart
+    fetch('/api/weekly_registrations')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.labels && data.values) {
+                 createChart(document.getElementById('registrationChart').getContext('2d'), 'line', {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'New Patients', data: data.values,
+                        borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        fill: true, tension: 0.3
+                    }]
+                }, { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } });
+            }
+        }).catch(error => console.error('Error fetching registration data:', error));
+
+    // Modal Logic
+    const modal = document.getElementById('activityModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const closeBtn = document.querySelector('.close-button');
+
+    document.querySelectorAll('.user-name-link').forEach(link => {
+        link.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const userId = link.dataset.userId;
+            const username = link.dataset.username;
+
+            modalTitle.textContent = `Activity Log: ${username}`;
+            modalBody.innerHTML = '<p>Loading activity...</p>';
+            modal.style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/user_activity/${userId}`);
+                const activities = await response.json();
+                
+                if (activities.length === 0) {
+                    modalBody.innerHTML = '<p>No recent activity recorded for this user.</p>';
+                    return;
                 }
+                
+                let content = activities.map(act => {
+                    const activityDate = new Date(act.date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+                    return `
+                        <div class="activity-item">
+                            <span class="activity-date">${activityDate}</span>
+                            <div class="activity-type">${act.type}</div>
+                            <a href="${act.link}">${act.description}</a>
+                        </div>
+                    `;
+                }).join('');
+                modalBody.innerHTML = content;
+
+            } catch (error) {
+                console.error('Failed to fetch user activity:', error);
+                modalBody.innerHTML = '<p>Error loading activity data. Please try again.</p>';
             }
         });
     });
+
+    closeBtn.onclick = () => { modal.style.display = "none"; }
+    window.onclick = (event) => { if (event.target == modal) modal.style.display = "none"; }
+});
 </script>
 {% endblock %}
+

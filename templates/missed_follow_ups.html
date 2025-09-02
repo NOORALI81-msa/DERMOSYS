@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fa-solid fa-calendar-times" style="color: #c0392b;"></i> Missed Follow-up Appointments</h1>
+    <p class="subtitle">Patients whose scheduled follow-up date has passed without a recorded visit.</p>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>UHID</th>
+                <th>Patient Name</th>
+                <th>Contact Number</th>
+                <th>Follow-up Was Due On</th>
+                <th>Days Overdue</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for patient in patients %}
+            <tr>
+                <td>{{ patient.patient_code }}</td>
+                <td>{{ patient.name }}</td>
+                <td>{{ patient.mobile_number or 'N/A' }}</td>
+                <td>{{ patient.last_follow_up_due.strftime('%Y-%m-%d') }}</td>
+                <td><span class="status-pill overdue">{{ patient.days_overdue | int }} days</span></td>
+                <td>
+                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-eye"></i> View Profile
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">No patients with missed follow-ups found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .status-pill.overdue {
+        background-color: #e74c3c;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}

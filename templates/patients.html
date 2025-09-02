@@ -6,7 +6,7 @@
 
 <div class="page-header">
     <h1>Patient Records</h1>
-    <a href="{{ url_for('patient_visit') }}" class="btn"><i class="fa-solid fa-plus"></i> Add New Visit</a>
+    <a href="{{ url_for('register_patient') }}" class="btn"><i class="fa-solid fa-plus"></i> Register New Patient</a>
 </div>
 
 <!-- Search and Export Form -->
@@ -19,7 +19,9 @@
     <div class="form-group"><label for="date_to">Date To</label><input type="date" name="date_to" id="date_to" value="{{ search_params.date_to or '' }}"></div>
     <div style="display: flex; gap: 10px;">
         <button type="submit" class="btn">Search</button>
-        <a href="{{ url_for('download_patient_data', **search_params) }}" class="btn" style="background-color: #27ae60;">Download CSV</a>
+        {% if session.get('role_id') == 1 %}
+    <a href="{{ url_for('download_patient_data', **search_params) }}" class="btn" style="background-color: #27ae60;">Download CSV</a>
+        {% endif %}
     </div>
 </form>
 
@@ -43,7 +45,7 @@
                 <td>{{ patient.name }}</td>
                 <td>{{ patient.age }}</td>
                 <td>{{ patient.gender }}</td>
-                <td>{{ patient.date_of_registration.strftime('%Y-%m-%d') }}</td>
+                <td>{{ patient.date_of_registration }}</td>
                 <td>{{ patient.diagnosis or 'N/A' }}</td>
                 <td>
                     <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="action-link">View Details</a>

@@ -5,13 +5,49 @@
     .page-header { margin-bottom: 20px; }
     .search-form { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 15px; }
     .search-form input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-    .btn { background-color: var(--highlight-color); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+    .btn { background-color: var(--highlight-color); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.2s; }
+    .btn-danger { background-color: #e74c3c; }
+    .btn-danger:hover { background-color: #c0392b; }
+    .btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
     .tab-container { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
     .tab-link { padding: 15px 25px; cursor: pointer; border: none; background-color: transparent; font-size: 1.1em; font-weight: 600; color: #888; position: relative; }
     .tab-link.active { color: var(--primary-color); }
     .tab-content { display: none; }
+
+    .selection-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background-color: #f8f9fa;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    .selection-toolbar label { font-weight: 500; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .selection-toolbar .count { font-weight: bold; color: var(--primary-color); }
+
     .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-    .image-card { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden; }
+    .image-card { 
+        background-color: #fff; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+        overflow: hidden; 
+        position: relative;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+    }
+    .image-card.selected { border-color: var(--highlight-color); }
+    .image-card .image-checkbox {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        z-index: 10;
+    }
     .image-card img { width: 100%; height: 200px; object-fit: cover; display: block; }
     .image-info { padding: 15px; }
     .image-info h3 { margin: 0 0 5px 0; }
@@ -29,46 +65,62 @@
 </form>
 
 <div class="tab-container">
-    <button class="tab-link active" onclick="openTab(event, 'DiagnosticReports')">Diagnostic Reports</button>
-    <button class="tab-link" onclick="openTab(event, 'ClinicalPhotos')">Clinical images</button>
+    <button class="tab-link active" onclick="openTab(event, 'DiagnosticReports')">Diagnostic Images</button>
+    <button class="tab-link" onclick="openTab(event, 'ClinicalPhotos')">Clinical Photos</button>
 </div>
 
 <div id="DiagnosticReports" class="tab-content" style="display: block;">
-    <div class="image-grid">
-        {% for report in diagnostic_reports %}
-        <div class="image-card">
-            <a href="{{ url_for('uploaded_file', filename=report.image_filename) }}" target="_blank">
-                <img src="{{ url_for('uploaded_file', filename=report.image_filename) }}" alt="Diagnostic Image">
-            </a>
-            <div class="image-info">
-                <h3>{{ report.report_type }}</h3>
-                <p>Patient: <a href="{{ url_for('patient_detail', patient_id=report.patient_id) }}">{{ report.patient_name }}</a></p>
-                <p>Date: {{ report.report_date.strftime('%d %b %Y') }}</p>
-            </div>
+    <form class="delete-form" action="{{ url_for('delete_images') }}" method="POST">
+        <div class="selection-toolbar">
+            <label><input type="checkbox" class="select-all"> Select All</label>
+            <span class="selection-count">Selected: <strong>0</strong></span>
+            <button type="submit" class="btn btn-danger" disabled>Delete Selected</button>
         </div>
-        {% else %}
-        <p>No diagnostic reports with images found.</p>
-        {% endfor %}
-    </div>
+        <div class="image-grid">
+            {% for report in diagnostic_reports %}
+            <div class="image-card">
+                <input type="checkbox" name="image_ids" value="{{ report.id }}" class="image-checkbox">
+                <a href="{{ url_for('uploaded_file', filename=report.image_filename) }}" target="_blank">
+                    <img src="{{ url_for('uploaded_file', filename=report.image_filename) }}" alt="Diagnostic Image">
+                </a>
+                <div class="image-info">
+                    <h3>{{ report.notes or 'Diagnostic Image' }}</h3>
+                    <p>Patient: <a href="{{ url_for('patient_detail', patient_id=report.patient_id) }}">{{ report.patient_name }}</a></p>
+                    <p>Date: {{ report.upload_date.strftime('%d %b %Y') }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p>No diagnostic images found.</p>
+            {% endfor %}
+        </div>
+    </form>
 </div>
 
 <div id="ClinicalPhotos" class="tab-content">
-    <div class="image-grid">
-        {% for image in clinical_photos %}
-        <div class="image-card">
-            <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
-                <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Clinical Photo">
-            </a>
-            <div class="image-info">
-                <h3>Clinical Photo</h3>
-                <p>Patient: <a href="{{ url_for('patient_detail', patient_id=image.patient_id) }}">{{ image.patient_name }}</a></p>
-                <p>Date: {{ image.upload_date.strftime('%d %b %Y') }}</p>
-            </div>
+    <form class="delete-form" action="{{ url_for('delete_images') }}" method="POST">
+        <div class="selection-toolbar">
+            <label><input type="checkbox" class="select-all"> Select All</label>
+            <span class="selection-count">Selected: <strong>0</strong></span>
+            <button type="submit" class="btn btn-danger" disabled>Delete Selected</button>
         </div>
-        {% else %}
-        <p>No clinical photos found.</p>
-        {% endfor %}
-    </div>
+        <div class="image-grid">
+            {% for image in clinical_photos %}
+            <div class="image-card">
+                <input type="checkbox" name="image_ids" value="{{ image.id }}" class="image-checkbox">
+                <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
+                    <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Clinical Photo">
+                </a>
+                <div class="image-info">
+                    <h3>Clinical Photo</h3>
+                    <p>Patient: <a href="{{ url_for('patient_detail', patient_id=image.patient_id) }}">{{ image.patient_name }}</a></p>
+                    <p>Date: {{ image.upload_date.strftime('%d %b %Y') }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p>No clinical photos found.</p>
+            {% endfor %}
+        </div>
+    </form>
 </div>
 
 <script>
@@ -81,5 +133,56 @@
         document.getElementById(tabName).style.display = "block";
         evt.currentTarget.classList.add("active");
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.delete-form').forEach(form => {
+            const selectAllCheckbox = form.querySelector('.select-all');
+            const imageCheckboxes = form.querySelectorAll('.image-checkbox');
+            const countDisplay = form.querySelector('.selection-count strong');
+            const deleteButton = form.querySelector('.btn-danger');
+
+            function updateSelection() {
+                const selectedCount = form.querySelectorAll('.image-checkbox:checked').length;
+                countDisplay.textContent = selectedCount;
+                deleteButton.disabled = selectedCount === 0;
+
+                imageCheckboxes.forEach(checkbox => {
+                    checkbox.closest('.image-card').classList.toggle('selected', checkbox.checked);
+                });
+            }
+
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', (e) => {
+                    imageCheckboxes.forEach(checkbox => {
+                        checkbox.checked = e.target.checked;
+                    });
+                    updateSelection();
+                });
+            }
+            
+            imageCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    if (!checkbox.checked) {
+                        selectAllCheckbox.checked = false;
+                    }
+                    updateSelection();
+                });
+            });
+
+            form.addEventListener('submit', (e) => {
+                const selectedCount = form.querySelectorAll('.image-checkbox:checked').length;
+                if (selectedCount === 0) {
+                    alert('Please select at least one image to delete.');
+                    e.preventDefault();
+                    return;
+                }
+                if (!confirm(`Are you sure you want to delete ${selectedCount} selected image(s)? This action cannot be undone.`)) {
+                    e.preventDefault();
+                }
+            });
+            
+            updateSelection();
+        });
+    });
 </script>
 {% endblock %}

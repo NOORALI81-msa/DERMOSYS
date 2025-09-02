@@ -5,22 +5,227 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+<style>
+    /* --- Main Form Layout --- */
+    .main-container .form-content form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+    .main-container .form-column {
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .form-column.full-width {
+        grid-column: 1 / -1;
+    }
+
+    /* --- Input Fields & Icons --- */
+    .main-container .form-group {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .main-container .form-group input,
+    .main-container .form-group select,
+    .main-container .form-group textarea {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: 'Poppins', sans-serif;
+        color: #333;
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+    }
+    .main-container .form-group input[readonly] {
+        background-color: #f4f7f6;
+        cursor: not-allowed;
+    }
+    .main-container .form-group textarea {
+        padding: 12px 15px;
+        min-height: 100px;
+        resize: vertical;
+    }
+    .main-container .form-group input:focus,
+    .main-container .form-group select:focus,
+    .main-container .form-group textarea:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+    .main-container .form-group .icon {
+        position: absolute;
+        top: 50%;
+        left: 15px;
+        transform: translateY(-50%);
+        color: #777;
+        pointer-events: none;
+    }
+
+    /* === UHID Search Results Styles === */
+    #uhid_search_results {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ccc;
+        border-top: none;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        border-radius: 0 0 8px 8px;
+    }
+    .uhid-result-item {
+        padding: 12px 15px;
+        cursor: pointer;
+    }
+    .uhid-result-item:hover {
+        background-color: #f1f1f1;
+    }
+
+    /* --- Blood Pressure Group --- */
+    .main-container .bp-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    .main-container .bp-group .form-group {
+        margin-bottom: 20px;
+    }
+    
+    /* === Patient Concerns Styles === */
+    .main-container .concerns-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+    .main-container .concern-item {
+        display: flex;
+        flex-direction: column;
+        background-color: #f8f9fa;
+        padding: 12px;
+        border-radius: 5px;
+        border: 1px solid #eee;
+    }
+    .main-container .concern-checkbox {
+        display: flex;
+        align-items: center;
+    }
+    .main-container .concern-checkbox input[type="checkbox"] {
+        width: auto;
+        margin-right: 10px;
+        accent-color: var(--highlight-color);
+        height: 18px;
+        width: 18px;
+    }
+    .main-container .concern-checkbox label {
+        font-weight: 500;
+        color: #555;
+    }
+    .main-container .concern-details {
+        display: none; 
+        margin-top: 10px;
+    }
+    .main-container .concern-item.active .concern-details {
+        display: block;
+    }
+    .main-container .concern-details input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    /* --- Attractive Buttons --- */
+    .main-container .submit-button {
+        grid-column: 1 / -1;
+        width: 50%;
+        margin: 20px auto 0;
+        padding: 15px;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        font-size: 1.1em;
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        border: none;
+        border-radius: 8px;
+        transition: all 0.3s;
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+    }
+    .main-container .submit-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.5);
+    }
+    
+    /* --- Laboratory Values Section --- */
+    .main-container .add-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .main-container .add-more-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .main-container .add-more-container .form-group {
+        flex-grow: 1;
+        margin-bottom: 0;
+    }
+    .main-container .add-icon-btn, .main-container .remove-icon-btn {
+        background: none; border: none; font-size: 1.8rem; cursor: pointer;
+        padding: 5px; line-height: 1; transition: color 0.3s ease;
+    }
+    .main-container .add-icon-btn { color: #27ae60; }
+    .main-container .add-icon-btn:hover { color: #2ecc71; }
+    .main-container .remove-icon-btn { color: #e74c3c; }
+    .main-container .remove-icon-btn:hover { color: #c0392b; }
+    
+    .main-container .flash-error {
+        grid-column: 1 / -1;
+    }
+
+    /* --- Responsive Design --- */
+    @media (max-width: 768px) {
+        .main-container .form-content form {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <div class="main-container">
     <div class="form-content">
-        <h2 class="form-title">New Patient Vitals Form</h2>
+        <h2 class="form-title">New Patient Registration</h2>
         <form method="post" action="{{ url_for('register_patient') }}" autocomplete="off">
             <div class="form-column">
                 <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
                 <div class="form-group">
-                    <input type="text" name="name" required placeholder="Full Name">
+                    <input type="text" id="uhid_search_input" name="external_patient_id" placeholder="Search UHID or Name from Reception..." autocomplete="off">
+                    <i class="icon fas fa-search"></i>
+                    <div id="uhid_search_results"></div>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="name_input" name="name" required placeholder="Full Name">
                     <i class="icon fas fa-user"></i>
                 </div>
                 <div class="form-group">
-                    <input type="number" name="age" required placeholder="Age">
+                    <input type="date" id="dob_input" name="dob" required placeholder="Date of Birth">
+                    <i class="icon fas fa-calendar-alt"></i>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="age" name="age" readonly placeholder="Age (auto-calculated)">
                     <i class="icon fas fa-birthday-cake"></i>
                 </div>
                 <div class="form-group">
-                    <select name="gender" required>
+                    <select id="gender_select" name="gender" required>
                         <option value="" disabled selected>Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -36,6 +241,22 @@
                     <input type="email" name="email" placeholder="Email Address">
                     <i class="icon fas fa-envelope"></i>
                 </div>
+                <div class="form-group">
+                    <input type="text" name="address" placeholder="Address">
+                    <i class="icon fas fa-map-marker-alt"></i>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="city" placeholder="City">
+                    <i class="icon fas fa-city"></i>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="state" placeholder="State">
+                    <i class="icon fas fa-flag-usa"></i>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="pincode" placeholder="Pincode">
+                    <i class="icon fas fa-map-pin"></i>
+                </div>
             </div>
 
             <div class="form-column">
@@ -44,25 +265,115 @@
                     <input type="number" step="0.1" name="temp" required placeholder="Temperature (°C)">
                     <i class="icon fas fa-thermometer-half"></i>
                 </div>
-                <div class="form-group">
-                    <input type="number" name="bp_sys" required placeholder="Systolic BP (e.g., 120)">
-                    <i class="icon fas fa-tint"></i>
+                <div class="bp-group">
+                    <div class="form-group">
+                        <input type="number" name="bp_sys" required placeholder="Systolic BP">
+                        <i class="icon fas fa-tint"></i>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" name="bp_dia" required placeholder="Diastolic BP">
+                        <i class="icon fas fa-tint"></i>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <input type="number" name="bp_dia" required placeholder="Diastolic BP (e.g., 80)">
-                    <i class="icon fas fa-tint"></i>
+                    <input type="number" name="heart_rate" required placeholder="Heart Rate (bpm)">
+                    <i class="icon fas fa-heart-pulse"></i>
                 </div>
                 <div class="form-group">
                     <input type="number" name="sugar" required placeholder="Blood Sugar (mg/dL)">
                     <i class="icon fas fa-cookie-bite"></i>
                 </div>
                 <div class="form-group">
-                    <input type="number" step="0.1" name="height" required placeholder="Height (cm)">
+                    <input type="number" step="0.1" id="height" name="height" required placeholder="Height (cm)">
                     <i class="icon fas fa-ruler-vertical"></i>
                 </div>
                 <div class="form-group">
-                    <input type="number" step="0.1" name="weight" required placeholder="Weight (kg)">
+                    <input type="number" step="0.1" id="weight" name="weight" required placeholder="Weight (kg)">
                     <i class="icon fas fa-weight"></i>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="bmi" name="bmi" readonly placeholder="BMI (auto-calculated)">
+                    <i class="icon fas fa-calculator"></i>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="bsa" name="bsa" readonly placeholder="BSA (auto-calculated)">
+                    <i class="icon fas fa-square-root-alt"></i>
+                </div>
+            </div>
+
+            <div class="form-column full-width">
+                <h3><i class="fas fa-notes-medical"></i> Clinical Information</h3>
+                <div class="form-group">
+                    <textarea name="complaints" placeholder="Chief Complaints"></textarea>
+                </div>
+                <div class="form-group">
+                    <textarea name="past_medical_history" placeholder="Past Medical History"></textarea>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="diagnosis" placeholder="Initial Diagnosis">
+                </div>
+                <div class="form-group">
+                    <input type="number" step="0.1" name="affected_bsa" placeholder="Affected BSA (%)">
+                </div>
+                <div class="form-group">
+                    <input type="text" name="initial_treatment_plan" placeholder="Initial Treatment Plan">
+                </div>
+                <div class="form-group">
+                    <h4 style="font-weight: 600; color: #555; margin-bottom: 10px;">Patient Concerns</h4>
+                    <div class="concerns-grid">
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c1" name="concerns" value="Diabetic"><label for="c1">Diabetic</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_diabetic" placeholder="Details (e.g., Type 2, 5 years)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c2" name="concerns" value="Hypertension"><label for="c2">Hypertension</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_hypertension" placeholder="Details (e.g., on medication)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c3" name="concerns" value="Pregnancy"><label for="c3">Pregnancy</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_pregnancy" placeholder="Details (e.g., 2nd trimester)"></div>
+                        </div>
+                         <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c4" name="concerns" value="Thyroid Issues"><label for="c4">Thyroid Issues</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_thyroid" placeholder="Details (e.g., Hypothyroidism)"></div>
+                        </div>
+                         <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c5" name="concerns" value="Cardiac Issues"><label for="c5">Cardiac Issues</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_cardiac" placeholder="Details (e.g., past MI)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c10" name="concerns" value="Asthma"><label for="c10">Asthma</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_asthma" placeholder="Details (e.g., uses inhaler)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c11" name="concerns" value="Kidney Issues"><label for="c11">Kidney Issues</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_kidney" placeholder="Details (e.g., CKD Stage 3)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c12" name="concerns" value="Liver Issues"><label for="c12">Liver Issues</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_liver" placeholder="Details (e.g., Fatty Liver)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c13" name="concerns" value="Epilepsy"><label for="c13">Epilepsy</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_epilepsy" placeholder="Details (e.g., on medication)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c6" name="concerns" value="Drug Allergy"><label for="c6">Drug Allergy</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_drug_allergy" placeholder="Details (e.g., Penicillin)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c7" name="concerns" value="Food Allergy"><label for="c7">Food Allergy</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_food_allergy" placeholder="Details (e.g., Peanuts)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c8" name="concerns" value="Smoking"><label for="c8">Smoking</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_smoking" placeholder="Details (e.g., 10/day for 5 years)"></div>
+                        </div>
+                        <div class="concern-item">
+                            <div class="concern-checkbox"><input type="checkbox" id="c9" name="concerns" value="Alcoholic"><label for="c9">Alcoholic</label></div>
+                            <div class="concern-details"><input type="text" name="concern_details_alcoholic" placeholder="Details (e.g., Socially)"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -73,8 +384,7 @@
                         <i class="fas fa-plus-circle"></i>
                     </button>
                 </div>
-                <div id="additional-vitals-container">
-                    </div>
+                <div id="additional-vitals-container"></div>
             </div>
             
             <div class="form-column">
@@ -103,7 +413,93 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Set the record date to today
+    const dobInput = document.getElementById('dob_input');
+    const ageInput = document.getElementById('age');
+    const heightInput = document.getElementById('height');
+    const weightInput = document.getElementById('weight');
+    const bmiInput = document.getElementById('bmi');
+    const bsaInput = document.getElementById('bsa');
+    
+    const uhidSearchInput = document.getElementById('uhid_search_input');
+    const uhidSearchResultsDiv = document.getElementById('uhid_search_results');
+    
+    const nameInput = document.getElementById('name_input');
+    const genderSelect = document.getElementById('gender_select');
+
+    function calculateAge() {
+        if (!dobInput.value) { ageInput.value = ''; return; }
+        const dob = new Date(dobInput.value);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        ageInput.value = age >= 0 ? age : '';
+    }
+
+    function calculateMetrics() {
+        const height = parseFloat(heightInput.value);
+        const weight = parseFloat(weightInput.value);
+        if (weight > 0 && height > 0) {
+            const heightInMeters = height / 100;
+            const bmi = (weight / (heightInMeters ** 2)).toFixed(2);
+            bmiInput.value = bmi;
+            const bsa = Math.sqrt((height * weight) / 3600).toFixed(2);
+            bsaInput.value = bsa;
+        } else {
+            bmiInput.value = '';
+            bsaInput.value = '';
+        }
+    }
+
+    dobInput.addEventListener('input', calculateAge);
+    heightInput.addEventListener('input', calculateMetrics);
+    weightInput.addEventListener('input', calculateMetrics);
+    
+    async function selectExternalPatient(patient) {
+        nameInput.value = patient.name || '';
+        dobInput.value = patient.dob || '';
+        genderSelect.value = patient.gender || '';
+        uhidSearchInput.value = patient.uhid;
+
+        uhidSearchResultsDiv.innerHTML = '';
+        uhidSearchResultsDiv.style.display = 'none';
+        
+        calculateAge();
+    }
+
+    uhidSearchInput.addEventListener('input', async function() {
+        const query = this.value;
+        if (query.length < 2) {
+            uhidSearchResultsDiv.innerHTML = '';
+            uhidSearchResultsDiv.style.display = 'none';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/external/search_uhid?q=${query}`);
+            const patients = await response.json();
+            
+            uhidSearchResultsDiv.innerHTML = '';
+            if (patients.length > 0) {
+                patients.forEach(patient => {
+                    const item = document.createElement('div');
+                    item.className = 'uhid-result-item';
+                    item.textContent = `${patient.uhid} - ${patient.name}`;
+                    item.onclick = () => selectExternalPatient(patient);
+                    uhidSearchResultsDiv.appendChild(item);
+                });
+                uhidSearchResultsDiv.style.display = 'block';
+            } else {
+                uhidSearchResultsDiv.innerHTML = '<div class="uhid-result-item">No patients found.</div>';
+                uhidSearchResultsDiv.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error searching UHID:', error);
+        }
+    });
+
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -118,7 +514,6 @@ document.addEventListener('DOMContentLoaded', function () {
         recordDateValueInput.value = formattedDate;
     }
 
-    // Handle adding and removing new input fields
     const addMoreBtn = document.getElementById('add-more-btn');
     const container = document.getElementById('additional-vitals-container');
 
@@ -128,30 +523,35 @@ document.addEventListener('DOMContentLoaded', function () {
             fieldCount++;
             const newRow = document.createElement('div');
             newRow.className = 'add-more-container';
-
             const vitalNameInput = document.createElement('div');
             vitalNameInput.className = 'form-group';
             vitalNameInput.innerHTML = `<input type="text" name="vital_name_${fieldCount}" placeholder="Parameter Name" required>`;
-
             const vitalValueInput = document.createElement('div');
             vitalValueInput.className = 'form-group';
             vitalValueInput.innerHTML = `<input type="text" name="vital_value_${fieldCount}" placeholder="Value" required>`;
-
             const removeButton = document.createElement('button');
             removeButton.type = 'button';
             removeButton.className = 'remove-icon-btn';
             removeButton.innerHTML = `<i class="fas fa-times-circle"></i>`;
-            removeButton.addEventListener('click', function() {
-                newRow.remove();
-            });
-
+            removeButton.addEventListener('click', function() { newRow.remove(); });
             newRow.appendChild(vitalNameInput);
             newRow.appendChild(vitalValueInput);
             newRow.appendChild(removeButton);
-
             container.appendChild(newRow);
         });
     }
+
+    document.querySelectorAll('.concern-item input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const parentItem = this.closest('.concern-item');
+            if (this.checked) {
+                parentItem.classList.add('active');
+                parentItem.querySelector('.concern-details input').focus();
+            } else {
+                parentItem.classList.remove('active');
+            }
+        });
+    });
 });
 </script>
 {% endblock %}

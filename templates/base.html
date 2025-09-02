@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}DermoSys{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainD.css') }}">
 </head>
 <body>
@@ -14,17 +14,19 @@
     <div class="app-layout">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h3><img src="{{ url_for('uploaded_file', filename='logo1.png') }}" alt="logo1" style="height: 50px;  width: 40px; border-radius: 50%;"> DermoSys</h3>
+                <!-- <h3 style="color: rgb(44, 19, 79);">DermoSYS</h3> -->
+                <h3><img src="{{ url_for('static', filename='skin.png') }}" alt="logo" style="height: 50px; width: 40px; border-radius: 10%;"> DermoSys</h3>
             </div>
             <nav class="sidebar-nav">
                 <a href="{{ url_for('dashboard') }}" class="{{ 'active' if 'dashboard' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-chart-pie"></i> Dashboard</a>
-                <a href="{{ url_for('list_patients') }}" class="{{ 'active' if 'list_patients' in request.endpoint or 'patient_detail' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-hospital-user"></i> Patients</a>
-                <a href="{{ url_for('patient_visit') }}" class="{{ 'active' if 'patient_visit' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-notes-medical"></i> Patient Visit</a>
+                <a href="{{ url_for('list_patients') }}" class="{{ 'active' if 'patient' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-hospital-user"></i> Patients</a>
+                <a href="{{ url_for('register_patient') }}" class="{{ 'active' if 'register_patient' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-user-plus"></i> Register Patient</a>
+                <a href="{{ url_for('list_follow_up_visits') }}" class="{{ 'active' if 'follow_up' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-notes-medical"></i> Follow-up Visits</a>
                 <a href="{{ url_for('create_prescription') }}" class="{{ 'active' if 'create_prescription' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-pills"></i> New Prescription</a>
                 <a href="{{ url_for('bed_management') }}" class="{{ 'active' if 'bed_management' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-bed-pulse"></i> Bed Mgt</a>
-                <a href="{{ url_for('list_lab_reports') }}" class="{{ 'active' if 'list_lab_reports' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-flask-vial"></i> Diagnostic Reports</a>
-                <li><a href="{{ url_for('diagnostic_center') }}"><i class="fa-solid fa-fw fa-images"></i> Diagnostic Center</a></li>
-                <a href="{{ url_for('list_consultations') }}" class="{{ 'active' if 'list_consultations' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-user-group"></i> Consultations</a>
+                <a href="{{ url_for('list_lab_reports') }}" class="{{ 'active' if 'lab_report' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-flask-vial"></i> Diagnostic Reports</a>
+                <a href="{{ url_for('diagnostic_center') }}" class="{{ 'active' if 'diagnostic_center' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-images"></i> Diagnostic Center</a>
+                
                 {% if session.get('role_id') == 1 %}
                 <a href="{{ url_for('register_user') }}" class="{{ 'active' if 'register_user' in request.endpoint else '' }}"><i class="fa-solid fa-fw fa-user-plus"></i> Add User</a>
                 {% endif %}
@@ -36,7 +38,13 @@
 
         <main class="main-content">
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}<div class="flash-container">{% for category, message in messages %}<div class="flash-message {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+                {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             {% endwith %}
             {% block content %}{% endblock %}
         </main>
@@ -53,7 +61,7 @@
                 overlay.classList.remove('active');
             }
 
-            if (menuToggle && sidebar) {
+            if (menuToggle && sidebar && overlay) {
                 menuToggle.addEventListener('click', () => {
                     sidebar.classList.toggle('open');
                     overlay.classList.toggle('active');

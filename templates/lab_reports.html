@@ -1,62 +1,180 @@
 {% extends "base.html" %}
+
 {% block content %}
 <style>
-    
+    /* --- Modal (Pop-up) Styles --- */
+    .modal-backdrop {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 25px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e5e5e5;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    .modal-header h4 { margin: 0; font-size: 1.25em; font-weight: 600; }
+    .modal-close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .modal-close:hover { color: black; }
 </style>
 
 <div class="page-header">
     <h1>Diagnostic Reports</h1>
-    <a href="{{ url_for('request_lab_report') }}" class="btn-add"><i class="fa-solid fa-plus"></i> Request New Report</a>
+    <button type="button" class="button" onclick="openModal('radiologyModal')">
+        <i class="fa-solid fa-plus"></i> Request New Radiology Scan
+    </button>
 </div>
 
-{% if grouped_reports %}
-    {% for department, reports_in_dept in grouped_reports.items() %}
-    <div class="department-section">
-        <h2 class="department-header">{{ department }}</h2>
-        <div class="table-container">
-            <table class="styled-table">
-                <thead>
-                    <tr>
-                        <th>Patient</th>
-                        <th>Report Type</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Actions / Upload</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for report in reports_in_dept %}
-                    <tr>
-                        <td>{{ report.patient_name }} ({{ report.patient_code }})</td>
-                        <td>{{ report.report_type }}</td>
-                        <td>{{ report.report_date.strftime('%Y-%m-%d') }}</td>
-                        <td><span class="status-{{ report.status.lower() }}">{{ report.status }}</span></td>
-                        <td>
-                            {% if report.status == 'Pending' %}
-                                <form action="{{ url_for('upload_lab_report', report_id=report.id) }}" method="post" enctype="multipart/form-data" class="upload-form-cell">
-                                    <input type="file" name="file" class="form-control">
-                                    <textarea name="report_summary" class="form-control" placeholder="Or type/paste summary here..." rows="3"></textarea>
-                                    <button type="submit" class="btn-add" style="padding: 5px 10px;">Update</button>
-                                </form>
-                            {% else %}
-                                {% if report.file_path %}
-                                <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="action-link">View File</a>
-                                {% endif %}
-                                {% if report.report_summary %}
-                                <div style="margin-top: 5px; font-size: 0.9em; white-space: pre-wrap;">{{ report.report_summary }}</div>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <div class="table-container" style="text-align: center; padding: 40px;">
-        <p>No lab reports found.</p>
-    </div>
+{% if error %}
+<div class="alert danger" style="margin-top: 20px;">
+    <strong>Error:</strong> {{ error }}
+</div>
 {% endif %}
+
+{% if dicom_file %}
+<div class="card" style="margin-top: 25px;">
+    <div class="card-header"><h4>DICOM Viewer: {{ dicom_file }}</h4></div>
+    <div class="card-body">
+        <div id="dicomImage" class="border" style="width:100%; height:512px; background-color:black;"></div>
+    </div>
+</div>
+<script src="https://unpkg.com/cornerstone-core@2.3.0/dist/cornerstone.js"></script>
+<script src="https://unpkg.com/dicom-parser@1.8.7/dist/dicomParser.js"></script>
+<script src="https://unpkg.com/cornerstone-wado-image-loader@3.1.2/dist/cornerstoneWADOImageLoader.js"></script>
+<script>
+    try {
+        cornerstoneWADOImageLoader.webWorkerManager.initialize({
+            maxWebWorkers: navigator.hardwareConcurrency || 1,
+            startWebWorkersOnDemand: true,
+            taskConfiguration: { 'decodeTask': { initializeCodecsOnStartup: false, usePDFJS: false, strict: false } }
+        });
+    } catch (error) { console.error("Web Worker initialization failed.", error); }
+
+    const element = document.getElementById('dicomImage');
+    cornerstone.enable(element);
+    cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+    const dicomFileName = "{{ dicom_file }}";
+    const imageId = `wadouri:${window.location.origin}/dicom/${dicomFileName}`;
+
+    cornerstone.loadAndCacheImage(imageId).then(function(image) {
+        cornerstone.displayImage(element, image);
+    }).catch(function(err) {
+        console.error("Error loading DICOM image:", err);
+        element.innerHTML = `<div style="padding:1rem; color: #ffb3b3;">Failed to load DICOM image. Check console.</div>`;
+    });
+</script>
+{% endif %}
+
+{% for department, reports in grouped_reports.items() %}
+    <h3 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">{{ department }}</h3>
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Report Type</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.patient_name }} ({{ report.patient_code }})</td>
+                <td>{{ report.report_type }}</td>
+                <td>{{ report.report_date.strftime('%d %b %Y') }}</td>
+                <td><span class="status-badge {{ report.status|lower }}">{{ report.status }}</span></td>
+                <td>
+                    {% if report.status == 'Completed' and report.file_path %}
+                        <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="button secondary">View File</a>
+                    {% else %}
+                        <span>-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No internal lab reports found.</p>
+{% endfor %}
+
+
+<div id="radiologyModal" class="modal-backdrop">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4>Request Radiology Scan (External API)</h4>
+            <span class="modal-close" onclick="closeModal('radiologyModal')">&times;</span>
+        </div>
+        <form action="{{ url_for('list_lab_reports') }}" method="POST" class="form-grid">
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" name="department" value="RADIOLOGY" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label for="uhid">Patient UHID</label>
+                <input type="text" name="uhid" class="form-control" placeholder="Enter Patient UHID" required>
+            </div>
+            <div class="form-group">
+                <label for="scan_type">Scan Type</label>
+                <select name="scan_type" class="form-control" required>
+                    <option value="" disabled selected>Select Scan Type</option>
+                    <option value="CT">CT</option>
+                    <option value="MR">MR</option>
+                    <option value="XRAY">XRAY</option>
+                    <option value="US">ULTRASOUND</option>
+                    <option value="PET">PET</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="body_part">Body Part</label>
+                <input type="text" name="body_part" id="body_part" 
+                       class="form-control" placeholder="e.g., BRAIN, CHEST" required
+                       oninput="this.value = this.toUpperCase()">
+            </div>
+            <div class="form-group">
+                 <button type="submit" class="button">Request Scan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// --- JavaScript for Modal Control ---
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = "flex";
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = "none";
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('radiologyModal');
+    if (event.target == modal) {
+        closeModal('radiologyModal');
+    }
+}
+</script>
+
 {% endblock %}

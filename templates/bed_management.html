@@ -29,39 +29,39 @@
 <div class="bed-grid">
     {% for bed in beds %}
     <div class="bed-card">
-        <div class="bed-card-header {{ bed.status.lower() }}">
-            <span>Bed {{ bed.bed_number }}</span>
-            {% if bed.status == 'Available' %}
-            <form action="{{ url_for('remove_bed', bed_id=bed.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this bed?');">
-                <button type="submit" class="btn-remove">&times;</button>
-            </form>
-            {% else %}
-            <span>{{ bed.status }}</span>
-            {% endif %}
-        </div>
-        <div class="bed-card-body">
-            {% if bed.status == 'Occupied' %}
-                <div class="patient-info">
-                    <p><strong>Patient:</strong> {{ bed.patient_name }} ({{ bed.patient_code }})</p>
-                    <p><strong>Admitted:</strong> {{ bed.admission_date.strftime('%d %b %Y, %I:%M %p') }}</p>
-                </div>
-                <a href="{{ url_for('discharge_patient', assignment_id=bed.assignment_id) }}" class="btn btn-discharge">Prepare Discharge</a>
-            {% else %}
-                <form action="{{ url_for('assign_bed', bed_id=bed.id) }}" method="POST">
-                    <div class="form-group">
-                        <label for="patient_id_{{ bed.id }}">Assign Patient</label>
-                        <select name="patient_id" id="patient_id_{{ bed.id }}" required>
-                            <option value="">-- Select Patient --</option>
-                            {% for patient in unassigned_patients %}
-                                <option value="{{ patient.id }}">{{ patient.patient_code }} - {{ patient.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-assign">Assign Bed</button>
-                </form>
-            {% endif %}
-        </div>
+    <div class="bed-card-header {{ bed.status.lower() }}">
+        <span>Bed {{ bed.bed_number }}</span>
+        {% if bed.status == 'Available' %}
+        <form action="{{ url_for('remove_bed', bed_id=bed.bed_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this bed?');">
+            <button type="submit" class="btn-remove">&times;</button>
+        </form>
+        {% else %}
+        <span>{{ bed.status }}</span>
+        {% endif %}
     </div>
+    <div class="bed-card-body">
+        {% if bed.status == 'Occupied' %}
+            <div class="patient-info">
+                <p><strong>Patient:</strong> {{ bed.patient_name }} ({{ bed.patient_code }})</p>
+                <p><strong>Admitted:</strong> {{ bed.admission_date.strftime('%d %b %Y, %I:%M %p') }}</p>
+            </div>
+            <a href="{{ url_for('discharge_patient', assignment_id=bed.assignment_id) }}" class="btn btn-discharge">Prepare Discharge</a>
+        {% else %}
+            <form action="{{ url_for('assign_bed', bed_id=bed.bed_id) }}" method="POST">
+                <div class="form-group">
+                    <label for="patient_id_{{ bed.bed_id }}">Assign Patient</label>
+                    <select name="patient_id" id="patient_id_{{ bed.bed_id }}" required>
+                        <option value="">-- Select Patient --</option>
+                        {% for patient in unassigned_patients %}
+                            <option value="{{ patient.id }}">{{ patient.patient_code }} - {{ patient.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-assign">Assign Bed</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
     {% endfor %}
 </div>
 {% endblock %}

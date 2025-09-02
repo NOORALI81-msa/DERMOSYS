@@ -1,11 +1,39 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<style>
+    @media print {
+        /* Hide everything on the page by default */
+        body * {
+            visibility: hidden;
+        }
+        
+        /* Make only the printable area and its contents visible */
+        .printable-area, .printable-area * {
+            visibility: visible;
+        }
+        
+        /* Reposition the printable area to fill the page */
+        .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        
+        /* Specifically hide the action buttons within the modal */
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
 <div class="form-container">
     <h1>Discharge Summary</h1>
     <h2>For {{ patient.name }} ({{ patient.patient_code }})</h2>
     
-    <form method="POST" id="dischargeForm">
+    <form method="POST" id="dischargeForm" action="{{ url_for('discharge_patient', assignment_id=assignment_id) }}">
         <div class="form-group">
             <label for="final_diagnosis">Final Diagnosis</label>
             <textarea name="final_diagnosis" id="final_diagnosis" required>{{ patient.diagnosis }}</textarea>
@@ -50,19 +78,18 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
 <script>
 function showPreview() {
-    // 1. Get the current text from the form fields
     const finalDiagnosis = document.getElementById('final_diagnosis').value;
     const treatmentSummary = document.getElementById('treatment_summary').value;
     const followUp = document.getElementById('follow_up_instructions').value;
 
-    // 2. Populate the preview modal with the text
     document.getElementById('preview_diagnosis').textContent = finalDiagnosis;
     document.getElementById('preview_treatment').textContent = treatmentSummary;
     document.getElementById('preview_instructions').textContent = followUp;
 
-    // 3. Show the modal
     document.getElementById('previewModal').style.display = 'flex';
 }
 
@@ -71,7 +98,7 @@ function closeModal(modalId) {
 }
 
 function submitForm() {
-    // Submits the original form to save the data to the database
     document.getElementById('dischargeForm').submit();
 }
 </script>
+{% endblock %}

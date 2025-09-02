@@ -64,12 +64,10 @@
     const height = parseFloat(heightInput.value);
     
     if (weight > 0 && height > 0) {
-      // Calculate and display BMI
       const heightInMeters = height / 100;
       const bmi = (weight / (heightInMeters ** 2)).toFixed(2);
       bmiInput.value = bmi;
 
-      // Calculate and display BSA (Mosteller formula)
       const bsa = Math.sqrt((height * weight) / 3600).toFixed(2);
       bsaInput.value = bsa;
 
