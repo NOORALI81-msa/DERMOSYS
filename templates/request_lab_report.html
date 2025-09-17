@@ -2,204 +2,116 @@
 
 {% block content %}
 <style>
-    /* --- Modal (Pop-up) Styles --- */
-    .modal-backdrop {
-        display: none; /* Hidden by default */
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.5); /* Semi-transparent black background */
-        justify-content: center;
-        align-items: center;
-    }
-    .modal-content {
-        background-color: #fefefe;
-        margin: auto;
-        padding: 25px;
-        border: 1px solid #888;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 600px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #e5e5e5;
-        padding-bottom: 15px;
+    /* Styles for the patient search and confirmation display */
+    .search-container {
+        position: relative;
         margin-bottom: 20px;
     }
-    .modal-header h4 {
-        margin: 0;
-        font-size: 1.25em;
-        font-weight: 600;
-    }
-    .modal-close {
-        color: #aaa;
-        font-size: 28px;
+    #patient-name-display {
+        background-color: #e9f5ff;
+        border: 1px solid #b3d7ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 25px;
         font-weight: bold;
-        cursor: pointer;
+        color: #0056b3;
     }
-    .modal-close:hover,
-    .modal-close:focus {
-        color: black;
-        text-decoration: none;
-    }
-
-    /* Styles for the form inside the modal */
-    .form-grid { display: grid; gap: 1.5rem; }
-    .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
-    /* Using existing .form-control and .button styles from your app */
 </style>
 
-<div class="page-header">
-    <h1>Lab & Radiology Center</h1>
-    <p>Request scans from the external radiology API or view existing reports from this clinic.</p>
+<div class="form-container">
+    <h1>Request New Investigation</h1>
+    <p>Search for a patient by UHID, then select and fill out the required investigation form.</p>
+
+    <!-- The form's action URL will be set by JavaScript to point to the correct blueprint -->
+    <form id="investigation-form" method="POST" action="">
+        <!-- Step 1: Search Patient by UHID -->
+        <div class="form-group">
+            <label for="uhid_search">Search Patient by UHID</label>
+            <input type="text" id="uhid_search" name="uhid" class="form-control" placeholder="Start typing UHID to find patient..." autocomplete="off" required>
+            <input type="hidden" name="patient_id" id="patient_id">
+        </div>
+        
+        <!-- Step 2: Display Patient Name for Confirmation -->
+        <div id="patient-name-display" style="display: none;"></div>
+
+        <!-- Step 3: Choose Investigation Type -->
+        <div class="form-group">
+            <label for="request_type_select">Type of Investigation</label>
+            <select id="request_type_select" name="request_type" class="form-control" required>
+                <option value="" disabled selected>-- First, find a patient --</option>
+                <option value="radiology">Radiology Scan</option>
+                <option value="lab">Lab Test</option>
+            </select>
+        </div>
+
+        <!-- Dynamic container for form fields -->
+        <div id="dynamic-fields-container"></div>
+
+        <div class="form-actions" style="margin-top: 25px;">
+            <button type="submit" class="btn-submit" id="submit-btn" disabled>Submit Request</button>
+        </div>
+    </form>
 </div>
 
-<button type="button" class="button" onclick="openModal('radiologyModal')">
-    <i class="fa-solid fa-plus"></i> Request New Radiology Scan
-</button>
-
-{% if error %}
-<div class="alert danger" style="margin-top: 20px;">
-    <strong>Error:</strong> {{ error }}
-</div>
-{% endif %}
-
-{% if dicom_file %}
-<div class="card" style="margin-top: 25px;">
-    <div class="card-header"><h4>DICOM Viewer: {{ dicom_file }}</h4></div>
-    <div class="card-body">
-        <div id="dicomImage" class="border" style="width:100%; height:512px; background-color:black;"></div>
-    </div>
-</div>
-<script src="https://unpkg.com/cornerstone-core@2.3.0/dist/cornerstone.js"></script>
-<script src="https://unpkg.com/dicom-parser@1.8.7/dist/dicomParser.js"></script>
-<script src="https://unpkg.com/cornerstone-wado-image-loader@3.1.2/dist/cornerstoneWADOImageLoader.js"></script>
 <script>
-    try {
-        cornerstoneWADOImageLoader.webWorkerManager.initialize({
-            maxWebWorkers: navigator.hardwareConcurrency || 1,
-            startWebWorkersOnDemand: true,
-            taskConfiguration: { 'decodeTask': { initializeCodecsOnStartup: false, usePDFJS: false, strict: false } }
-        });
-    } catch (error) { console.error("Web Worker initialization failed.", error); }
+document.addEventListener("DOMContentLoaded", () => {
+    const uhidInput = document.getElementById('uhid_search');
+    const patientNameDisplay = document.getElementById('patient-name-display');
+    const patientIdInput = document.getElementById('patient_id');
+    const submitBtn = document.getElementById('submit-btn');
+    const investigationForm = document.getElementById('investigation-form');
+    const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
+    const requestTypeSelect = document.getElementById('request_type_select');
 
-    const element = document.getElementById('dicomImage');
-    cornerstone.enable(element);
-    cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
-    const dicomFileName = "{{ dicom_file }}";
-    const imageId = `wadouri:${window.location.origin}/dicom/${dicomFileName}`;
+    // Live search for UHID to find patient name and ID
+    uhidInput.addEventListener('input', async function() {
+        const query = this.value;
+        if (query.length < 3) {
+            patientNameDisplay.style.display = 'none';
+            patientIdInput.value = '';
+            submitBtn.disabled = true;
+            return;
+        }
 
-    cornerstone.loadAndCacheImage(imageId).then(function(image) {
-        cornerstone.displayImage(element, image);
-    }).catch(function(err) {
-        console.error("Error loading DICOM image:", err);
-        element.innerHTML = `<div style="padding:1rem; color: #ffb3b3;">Failed to load DICOM image. Check console.</div>`;
+        // This fetch uses the existing API endpoint you already have in app.py
+        const response = await fetch(`{{ url_for('search_patients') }}?q=${query}`);
+        const patients = await response.json();
+        
+        if (patients.length > 0) {
+            const patient = patients[0];
+            patientIdInput.value = patient.id;
+            uhidInput.value = patient.patient_code; // Correct the UHID to the canonical version
+            patientNameDisplay.textContent = `Patient Found: ${patient.name} (${patient.patient_code})`;
+            patientNameDisplay.style.display = 'block';
+            submitBtn.disabled = false;
+        } else {
+            patientNameDisplay.textContent = 'No patient found with this UHID.';
+            patientNameDisplay.style.display = 'block';
+            patientIdInput.value = '';
+            submitBtn.disabled = true;
+        }
     });
+
+    // Logic to show fields and, crucially, set the form's correct submission URL
+    requestTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        dynamicFieldsContainer.innerHTML = ''; // Clear previous fields
+
+        if (selectedType === 'radiology') {
+            // Set the form's action to the existing radiology blueprint route
+            investigationForm.action = "{{ url_for('radiology_api.request_scan') }}";
+            dynamicFieldsContainer.innerHTML = `
+                <div class="form-group" style="margin-top:15px;"><label>Scan Type</label><select name="radiology_scan_type" class="form-control" required><option value="" disabled selected>Select...</option><option value="CT">CT</option><option value="MR">MR</option><option value="XRAY">XRAY</option><option value="US">ULTRASOUND</option></select></div>
+                <div class="form-group" style="margin-top:15px;"><label>Body Part</label><input type="text" name="radiology_body_part" class="form-control" placeholder="e.g., BRAIN, CHEST" required oninput="this.value = this.toUpperCase()"></div>`;
+        } else if (selectedType === 'lab') {
+            // Set the form's action to the existing lab blueprint route
+            investigationForm.action = "{{ url_for('lab_api.request_lab_test') }}";
+            dynamicFieldsContainer.innerHTML = `
+                <div class="form-group" style="margin-top:15px;"><label>Test Name</label><input type="text" name="lab_test_name" class="form-control" placeholder="e.g., Complete Blood Count" required></div>
+                <div class="form-group" style="margin-top:15px;"><label>Department</label><input type="text" name="lab_department" value="Pathology" class="form-control" required></div>`;
+        }
+    });
+});
 </script>
-{% endif %}
-
-
-<div class="page-header" style="margin-top: 40px;">
-    <h2>Requested Reports (Internal)</h2>
-</div>
-{% for department, reports in grouped_reports.items() %}
-    <h3 style="margin-bottom: 15px;">{{ department }}</h3>
-    {% for report in reports %}
-    <div class="card">
-        <div class="card-header">
-            <h4>{{ report.report_type }} for {{ report.patient_name }} ({{ report.patient_code }})</h4>
-            <span class="status-badge {{ report.status|lower }}">{{ report.status }}</span>
-        </div>
-        <div class="card-body">
-            <p><strong>Date:</strong> {{ report.report_date.strftime('%d %b %Y') }} | <strong>Requested by:</strong> Dr. {{ report.doctor_name }}</p>
-            {% if report.status == 'Pending' %}
-            <form action="{{ url_for('upload_lab_report', report_id=report.id) }}" method="post" enctype="multipart/form-data" class="form-inline">
-                <input type="file" name="file" class="form-control">
-                <textarea name="report_summary" class="form-control" placeholder="Add report summary..."></textarea>
-                <button type="submit" class="button">Upload & Complete</button>
-            </form>
-            {% else %}
-                {% if report.file_path %}
-                    <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="button secondary">View Report File</a>
-                {% endif %}
-                {% if report.report_summary %}
-                    <p style="margin-top: 15px;"><strong>Summary:</strong><br>{{ report.report_summary }}</p>
-                {% endif %}
-            {% endif %}
-        </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <p>No internal lab reports found.</p>
-{% endfor %}
-
-
-<div id="radiologyModal" class="modal-backdrop">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h4>Request Radiology Scan (External API)</h4>
-            <span class="modal-close" onclick="closeModal('radiologyModal')">&times;</span>
-        </div>
-        <form method="POST" class="form-grid">
-            <div class="form-group">
-                <label>Department</label>
-                <input type="text" name="department" value="RADIOLOGY" 
-                       class="form-control" readonly>
-            </div>
-            <div class="form-group">
-                <label for="uhid">Patient UHID</label>
-                <input type="text" name="uhid" class="form-control" placeholder="Enter Patient UHID" 
-                       value="{{ patient_uhid or '' }}" required>
-            </div>
-            <div class="form-group">
-                <label for="scan_type">Scan Type</label>
-                <select name="scan_type" class="form-control" required>
-                    <option value="" disabled selected>Select Scan Type</option>
-                    <option value="CT">CT</option>
-                    <option value="MR">MR</option>
-                    <option value="XRAY">XRAY</option>
-                    <option value="US">ULTRASOUND</option>
-                    <option value="PET">PET</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="body_part">Body Part</label>
-                <input type="text" name="body_part" id="body_part" 
-                       class="form-control" placeholder="e.g., BRAIN, CHEST" required
-                       oninput="this.value = this.toUpperCase()">
-            </div>
-            <div class="form-group">
-                 <button type="submit" class="button">Request Scan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-// --- JavaScript for Modal Control ---
-function openModal(modalId) {
-    document.getElementById(modalId).style.display = "flex";
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).style.display = "none";
-}
-
-// Close the modal if the user clicks anywhere outside of the modal content
-window.onclick = function(event) {
-    const modal = document.getElementById('radiologyModal');
-    if (event.target == modal) {
-        closeModal('radiologyModal');
-    }
-}
-</script>
-
 {% endblock %}
+

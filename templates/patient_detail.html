@@ -1,651 +1,1212 @@
 {% extends "base.html" %}
 {% block content %}
+    <style>
+        :root {
+            --primary: #2c6fbb;
+            --primary-dark: #1a5ca5;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7f9;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        .patient-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .patient-header .info h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .patient-code {
+            background: #e9ecef;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: var(--secondary);
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.admitted {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .actions-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        
+        .actions-button:hover {
+            background: var(--primary-dark);
+        }
+        
+        .header-actions {
+            position: relative;
+        }
+        
+        .actions-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            padding: 10px 0;
+            z-index: 100;
+            min-width: 220px;
+            margin-top: 5px;
+        }
+        
+        .actions-dropdown.show {
+            display: block;
+        }
+        
+        .actions-dropdown button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #333;
+            transition: background 0.2s;
+        }
+        
+        .actions-dropdown button:hover {
+            background: #f5f5f5;
+        }
+        
+        /* Navigation Tabs */
+        .detail-nav {
+            display: flex;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .tab-link {
+            padding: 12px 20px;
+            text-decoration: none;
+            color: var(--secondary);
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .tab-link:hover, .tab-link.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        /* Add these two rules inside the <style> tag */
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
 
-<style>
-   /* --- Main Layout & Cards (Updated for Compact View) --- */
-.data-section {
-    margin-bottom: 25px;
-}
-.data-section h2 {
-    font-size: 1.4em; /* Was 1.6em */
-    color: #333;
-    border-bottom: 2px solid #f0f0f0;
-    padding-bottom: 10px;
-    margin-bottom: 15px; /* Was 20px */
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.card {
-    background: #fff;
-    border-radius: 10px; /* Was 12px */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06); /* Was 0 4px 15px rgba(0,0,0,0.07) */
-    margin-bottom: 15px; /* Was 20px */
-    overflow: hidden;
-}
-.card-header {
-    background-color: #f8f9fa;
-    padding: 12px 18px; /* Was 15px 20px */
-    border-bottom: 1px solid #e9ecef;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.card-header h4 {
-    margin: 0;
-    font-size: 1.0em; /* Was 1.1em */
-    font-weight: 600;
-}
-.card-body {
-    padding: 18px; /* Was 20px */
-    line-height: 1.5; /* Was 1.6 */
-}
-.empty-state {
-    text-align: center;
-    padding: 40px; /* Was 50px */
-    color: #777;
-}
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header h4 {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        /* Overview Grid Layout */
+        .overview-grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 992px) {
+            .overview-grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Info Grid Styles */
+        <!-- .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+         -->
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-item strong {
+            color: var(--secondary);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .info-item span {
+            font-size: 1.1rem;
+        }
+        
+        /* Abnormal Vital Styling */
+        .abnormal-vital {
+            color: var(--danger);
+            font-weight: 500;
+        }
+        
+        /* Notes Grid */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .notes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .notes-grid h5 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .medical-notes {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary);
+            white-space: pre-wrap;
+        }
+        
+        /* History Layout */
+        .history-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 400px;
+        }
+        
+        @media (max-width: 992px) {
+            .history-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .visit-list-container {
+            border-right: 1px solid #eee;
+            padding-right: 20px;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        
+        @media (max-width: 992px) {
+            .visit-list-container {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+                padding-right: 0;
+                padding-bottom: 20px;
+                max-height: 200px;
+            }
+        }
+        
+        .visit-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .visit-list-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .visit-list-item.active {
+            background: #e3f2fd;
+        }
+        
+        .visit-list-item .icon {
+            margin-right: 12px;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .visit-list-item .info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .visit-list-item .info span {
+            font-weight: 500;
+        }
+        
+        .visit-list-item .info small {
+            color: var(--secondary);
+            font-size: 0.85rem;
+        }
+        
+        .visit-detail-container {
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .visit-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .visit-detail-header h3 {
+            color: var(--primary);
+        }
+        
+        /* Prescription Table */
+        .prescription-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .prescription-table th {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--secondary);
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .prescription-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .prescription-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Image Gallery */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 15px;
+        }
+        
+        .image-card {
+            position: relative;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            aspect-ratio: 1/1;
+        }
+        
+        .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+        
+        .btn-delete-img {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .btn-delete-img:hover {
+            opacity: 1;
+        }
+        
+        /* Lab Reports */
+        .lab-reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .report-card {
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .report-card-header {
+            padding: 15px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .report-card-body {
+            padding: 15px;
+            flex-grow: 1;
+        }
+        
+        .report-card-footer {
+            padding: 15px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        /* Status Badges for Lab Reports */
+        .status-badge.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            color: white;
+        }
+        
+        .btn-icon {
+            padding: 5px 8px;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(44, 111, 187, 0.1);
+        }
+        
+        /* Modal Styles */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--secondary);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--secondary);
+            font-style: italic;
+        }
+        
 
-/* --- Buttons & Links --- */
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.95em;
-    font-weight: 500;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease-in-out;
-}
-.btn-primary { background-color: #3498db; color: white; }
-.btn-primary:hover { background-color: #2980b9; }
-.btn-danger { background-color: #e74c3c; color: white; }
-.btn-danger:hover { background-color: #c0392b; }
-.btn-secondary { background-color: #95a5a6; color: white; }
-.btn-secondary:hover { background-color: #7f8c8d; }
-.btn-icon {
-    padding: 8px;
-    font-size: 1.1em;
-    min-width: 36px;
-    text-align: center;
-    justify-content: center;
-}
+        /* Print Section */
 
-/* --- Clickable Actions Dropdown --- */
-.header-actions { position: relative; }
-.actions-button { text-decoration: none; }
-.actions-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    background-color: white;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    border-radius: 8px;
-    z-index: 100;
-    min-width: 240px;
-    overflow: hidden;
-    padding: 5px 0;
-    margin-top: 5px;
-}
-.actions-dropdown.show { display: block; }
-.actions-dropdown a, .actions-dropdown button {
-    display: flex; align-items: center; gap: 12px; padding: 12px 20px;
-    color: #333; text-decoration: none; background: none; border: none;
-    width: 100%; text-align: left; cursor: pointer; font-size: 0.95em;
-}
-.actions-dropdown a:hover, .actions-dropdown button:hover { background-color: #f5f5f5; }
-.actions-dropdown i { color: #555; }
-
-/* --- Overview Tab --- */
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 10px 30px;
-}
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 1.05em;
-    border-bottom: 1px solid #f5f5f5;
-}
-.info-item strong { color: #555; }
-.abnormal-vital { color: #e74c3c; font-weight: bold; }
-.medical-notes {
-    white-space: pre-wrap;
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 10px;
-}
-
-/* --- Visit History Tab --- */
-.history-layout { display: grid; grid-template-columns: 350px 1fr; gap: 25px; min-height: 500px; }
-.visit-list-container { border-right: 1px solid #e9ecef; overflow-y: auto; padding-right: 15px; }
-.visit-list-item {
-    display: flex; align-items: center; padding: 15px; border-radius: 8px;
-    margin-bottom: 10px; cursor: pointer; transition: all 0.2s ease-in-out;
-    border: 1px solid #e9ecef;
-}
-.visit-list-item:hover { background-color: #f8f9fa; border-color: #dcdcdc; }
-.visit-list-item.active { background-color: #e9f5ff; border-color: #3498db; box-shadow: 0 2px 5px rgba(52, 152, 219, 0.2); }
-.visit-list-item .icon { font-size: 1.5rem; color: #3498db; margin-right: 15px; width: 30px; text-align: center; }
-.visit-list-item .info { display: flex; flex-direction: column; }
-.visit-list-item .info span { font-weight: 500; }
-.visit-list-item.active .info span { font-weight: 600; }
-.visit-detail-header {
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid #e9ecef; padding-bottom: 15px;
-}
-.visit-detail-header .actions { display: flex; gap: 10px; }
-.visit-detail-body { padding-top: 20px; }
-
-/* --- Image Gallery --- */
-.image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-.image-card { position: relative; }
-.image-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; }
-.btn-delete-img {
-    position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5);
-    color: white; border: none; border-radius: 50%; width: 28px; height: 28px;
-    cursor: pointer; font-size: 1.2rem; line-height: 28px; text-align: center;
-    transition: background 0.2s;
-}
-.btn-delete-img:hover { background: #e74c3c; }
-
-/* --- Modals --- */
-.modal-backdrop {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1050;
-    overflow-y: auto; /* Allow scrolling for long modals */
-}
-.modal-content {
-    background-color: white; padding: 25px; border-radius: 8px; width: 90%;
-    max-width: 650px; /* Wider for prescription form */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    margin: 5% auto; /* Add margin for scrolling */
-}
-.modal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;
-}
-.modal-header h2 { margin: 0; font-size: 1.5em; }
-.modal-close { background: none; border: none; font-size: 1.8em; cursor: pointer; color: #888; }
-.modal-footer {
-    display: flex; justify-content: flex-end; gap: 10px;
-    margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee;
-}
-
-/* --- Specific styles for prescription modal --- */
-.medication-item {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #f0f0f0;
-    position: relative;
-}
-.medication-item input { width: 100%; }
-.medication-item input[name*="notes"] { grid-column: 1 / -1; }
-.btn-remove-med {
-    position: absolute; top: 0px; right: 0px; background: #e74c3c; color: white;
-    border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
-    font-size: 1.1rem; line-height: 24px; text-align: center;
-}
-
-/* --- Print Section --- */
-@media print {
-    body { margin: 0; padding: 0; }
-    .patient-header, .detail-nav, .tab-content-container, .modal-backdrop, #sidebar, .top-bar { display: none !important; }
-    .print-only-section, .print-only-section * { visibility: visible; }
-    .print-only-section { 
-        display: block !important; position: static; width: auto; margin: 20px; 
-        font-family: 'Times New Roman', serif; color: #000;
-    }
-    .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-    .print-header h1 { margin: 0; font-size: 24pt; }
-    .print-header p { margin: 5px 0; font-size: 12pt; }
-    .print-patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; margin-bottom: 20px; font-size: 12pt; padding-bottom: 15px; border-bottom: 1px solid #ccc;}
-    .print-section-title { font-size: 16pt; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin: 25px 0 15px 0; }
-    .print-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
-    .print-table th, .print-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    .print-table th { background-color: #f2f2f2; }
-    .print-notes { white-space: pre-wrap; background: #f9f9f9; padding: 10px; border: 1px solid #eee; border-radius: 4px; }
-    .print-visit { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ccc; }
-    .print-footer { text-align: center; margin-top: 40px; font-size: 10pt; color: #555; }
-    .normal-value { font-weight: bold; }
-    .abnormal-value { font-weight: bold; color: #D32F2F !important; }
-}
-
-/* --- Responsive Adjustments for Mobile --- */
-@media (max-width: 768px) {
-    .patient-header { flex-direction: column; align-items: flex-start; gap: 20px; }
-    .history-layout { grid-template-columns: 1fr; }
-}
-</style>
-
-<div class="patient-header">
-    <div class="info">
-        <h1>{{ patient.name }}</h1>
-        <div class="patient-code">{{ patient.patient_code }}</div>
-    </div>
-    <div style="display: flex; align-items: center; gap: 15px;">
-        {% if admission %}<span class="status-badge admitted">Admitted: Bed {{ admission.bed_number }}</span>{% endif %}
-        <a href="javascript:window.print()" class="btn btn-secondary actions-button"><i class="fa-solid fa-print"></i> Print Summary</a>
-        <div class="header-actions">
-            <button id="actions-btn" class="btn btn-primary actions-button">Actions <i class="fa-solid fa-caret-down"></i></button>
-            <div class="actions-dropdown">
-                <button type="button" onclick="openModal('addFollowUpModal')"><i class="fa-solid fa-stethoscope"></i> Add Follow-up Visit</button>
-                <button type="button" onclick="openModal('prescriptionModal')"><i class="fa-solid fa-pills"></i> Create Prescription</button>
-                <button type="button" onclick="openModal('radiologyModal')"><i class="fa-solid fa-flask-vial"></i> Request Lab / Radiology</button>
-                <button type="button" onclick="openModal('patientInfoModal')"><i class="fa-solid fa-user-pen"></i> Edit Patient Info</button>
-                <button type="button" onclick="openModal('qrCodeModal')"><i class="fa-solid fa-qrcode"></i> Mobile Upload QR</button>
+        .print-only-section {
+            display: none;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            .print-only-section, .print-only-section * {
+                visibility: visible;
+            }
+            
+           .print-only-section {
+                display: block; /* ADD THIS LINE */
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+            }
+            
+            .print-header {
+                text-align: center;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 15px;
+            }
+            
+            .print-patient-info {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .print-section-title {
+                background-color: #f0f0f0;
+                padding: 8px 12px;
+                margin: 15px 0 10px 0;
+                border-left: 4px solid #2c6fbb;
+            }
+            
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 15px;
+            }
+            
+            .print-table th, .print-table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            
+            .print-table th {
+                background-color: #f5f5f5;
+            }
+            
+            .print-notes {
+                border: 1px solid #ddd;
+                padding: 12px;
+                margin-bottom: 15px;
+                background-color: #f9f9f9;
+            }
+            
+            .print-visit {
+                border: 1px solid #ddd;
+                padding: 15px;
+                margin-bottom: 15px;
+                background-color: #f9f9f9;
+            }
+            
+            .print-footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #ddd;
+                font-style: italic;
+            }
+            
+            .abnormal-value {
+                color: #dc3545;
+                font-weight: bold;
+            }
+            
+            .normal-value {
+                color: #28a745;
+            }
+        }
+        
+        /* Medication Items */
+        .medication-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        @media (max-width: 1200px) {
+            .medication-item {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .btn-remove-med {
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .patient-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .detail-nav {
+                overflow-x: auto;
+            }
+            
+            .tab-link {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="patient-header">
+            <div class="info">
+                <h1>{{ patient.name }}</h1>
+                <div class="patient-code">{{ patient.patient_code }}</div>
             </div>
-        </div>
-    </div>
-</div>
-
-<nav class="detail-nav">
-    <a class="tab-link active" data-tab="overview">Overview</a>
-    <a class="tab-link" data-tab="history">Visit History</a>
-    <a class="tab-link" data-tab="prescriptions">Prescriptions</a>
-    <a class="tab-link" data-tab="gallery">Image Gallery</a>
-    <a class="tab-link" data-tab="reports">Lab Reports</a>
-    {% if admission %}<a class="tab-link" data-tab="inpatient">In-Patient Details</a>{% endif %}
-</nav>
-
-<div class="tab-content-container">
-
-    <div id="overview" class="tab-pane active">
-        <div class="card">
-            <div class="card-header"><h4><i class="fa-solid fa-user"></i> Patient Information</h4></div>
-            <div class="card-body">
-                <div class="info-grid">
-                    <div class="info-item"><strong>Age:</strong> <span>{{ patient.age }} years</span></div>
-                    <div class="info-item"><strong>Gender:</strong> <span>{{ patient.gender }}</span></div>
-                    <div class="info-item"><strong>Mobile:</strong> <span>{{ patient.mobile_number or 'N/A' }}</span></div>
-                    <div class="info-item"><strong>Email:</strong> <span>{{ patient.email or 'N/A' }}</span></div>
-                    <div class="info-item"><strong>Registered:</strong> <span>{{ patient.date_of_registration.strftime('%d %b %Y') }}</span></div>
-                    <div class="info-item"><strong>External ID:</strong> <span>{{ patient.external_patient_id or 'N/A' }}</span></div>
-                    <div class="info-item" style="grid-column: 1 / -1; flex-direction: column; align-items: flex-start; border-bottom: none;">
-                        <strong>Address:</strong>
-                        <span style="padding-left: 10px; margin-top: 5px; color: #555;">
-                            {{ patient.address or 'No address provided' }}<br>
-                            {{ patient.city or '' }}{% if patient.city and patient.state %}, {% endif %}{{ patient.state or '' }} - {{ patient.pincode or '' }}
-                        </span>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                {% if admission %}<span class="status-badge admitted">Admitted: Bed {{ admission.bed_number }}</span>{% endif %}
+                <a href="javascript:window.print()" class="actions-button"><i class="fa-solid fa-print"></i> Print Summary</a>
+                <div class="header-actions">
+                    <button id="actions-btn" class="actions-button">Actions <i class="fa-solid fa-caret-down"></i></button>
+                    <div class="actions-dropdown">
+                        <button type="button" onclick="openModal('addFollowUpModal')"><i class="fa-solid fa-stethoscope"></i> Add Follow-up</button>
+                        <button type="button" onclick="openModal('prescriptionModal')"><i class="fa-solid fa-pills"></i> Create Prescription</button>
+                        <button type="button" onclick="openModal('requestModal')"><i class="fa-solid fa-flask-vial"></i> Request Investigation</button>
+                        <button type="button" onclick="openModal('patientInfoModal')"><i class="fa-solid fa-user-pen"></i> Edit Patient Info</button>
+                        <button type="button" onclick="openModal('qrCodeModal')"><i class="fa-solid fa-qrcode"></i> Mobile Upload QR</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header"><h4><i class="fa-solid fa-heart-pulse"></i> Vitals & Metrics (at Registration)</h4></div>
-            <div class="card-body">
-                <div class="info-grid">
-                    <div class="info-item"><strong>Height:</strong> <span>{{ patient.initial_height or 'N/A' }} cm</span></div>
-                    <div class="info-item"><strong>Weight:</strong> <span>{{ patient.initial_weight or 'N/A' }} kg</span></div>
-                    <div class="info-item"><strong>Temperature:</strong><span>{% if patient.initial_temperature %}<span class="{{ 'abnormal-vital' if patient.initial_temperature < 36.1 or patient.initial_temperature > 37.0 }}">{{ "%.1f"|format(patient.initial_temperature) }} °C</span>{% else %}N/A{% endif %}</span></div>
-                    <div class="info-item"><strong>Blood Pressure:</strong>
-                        <span>
-                            {% if patient.initial_blood_pressure and '/' in patient.initial_blood_pressure %}
-                                {% set bp_parts = patient.initial_blood_pressure.split('/') %}
-                                <span class="{{ 'abnormal-vital' if (bp_parts[0]|trim|int > 129 or bp_parts[1]|trim|int > 79) or (bp_parts[0]|trim|int < 90 or bp_parts[1]|trim|int < 60) }}">{{ patient.initial_blood_pressure }} mmHg</span>
-                            {% else %}
-                                {{ patient.initial_blood_pressure or 'N/A' }}
-                            {% endif %}
-                        </span>
+        <nav class="detail-nav">
+            <a class="tab-link active" data-tab="overview">Overview</a>
+            <a class="tab-link" data-tab="history">Visit History</a>
+            <a class="tab-link" data-tab="prescriptions">Prescriptions</a>
+            <a class="tab-link" data-tab="gallery">Image Gallery</a>
+            <a class="tab-link" data-tab="reports">Lab Reports</a>
+            {% if admission %}
+                <a class="tab-link" data-tab="inpatient">In-Patient Details</a>
+            {% elif admission_history %}
+                <a class="tab-link" data-tab="admission_history">Admission History</a>
+            {% endif %}
+        </nav>
+
+        <div class="tab-content-container">
+            <div id="overview" class="tab-pane active">
+                <div class="overview-grid-layout">
+                    <div class="card">
+                        <div class="card-header"><h4>Patient Information</h4></div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item"><strong>Age:</strong> <span>{{ patient.age }} years</span></div>
+                                <div class="info-item"><strong>Gender:</strong> <span>{{ patient.gender }}</span></div>
+                                <div class="info-item"><strong>Mobile:</strong> <span>{{ patient.mobile_number or 'N/A' }}</span></div>
+                                <div class="info-item"><strong>Registered:</strong> <span>{{ patient.date_of_registration.strftime('%d %b %Y') }}</span></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="info-item"><strong>Heart Rate:</strong><span>{% if patient.initial_pulse_rate %}<span class="{{ 'abnormal-vital' if patient.initial_pulse_rate < 60 or patient.initial_pulse_rate > 100 }}">{{ patient.initial_pulse_rate }} bpm</span>{% else %}N/A{% endif %}</span></div>
-                    <div class="info-item"><strong>Blood Sugar:</strong><span>{% if patient.blood_sugar %}<span class="{{ 'abnormal-vital' if patient.blood_sugar > 125 }}">{{ patient.blood_sugar }} mg/dL</span>{% else %}N/A{% endif %}</span></div>
-                    <div class="info-item"><strong>BMI:</strong><span>{% if patient.initial_bmi %}<span class="{{ 'abnormal-vital' if patient.initial_bmi < 18.5 or patient.initial_bmi > 24.9 }}">{{ "%.2f"|format(patient.initial_bmi) }}</span>{% else %}N/A{% endif %}</span></div>
-                    <div class="info-item"><strong>BSA:</strong> <span>{{ "%.2f"|format(patient.initial_bsa) if patient.initial_bsa else 'N/A' }} m²</span></div>
-                    <div class="info-item"><strong>Affected BSA:</strong> <span>{{ patient.affected_bsa_percentage or 'N/A' }} %</span></div>
-                    {% for vital in additional_vitals %}
-                    <div class="info-item"><strong>{{ vital.vital_name }}:</strong> <span>{{ vital.vital_value }}</span></div>
-                    {% endfor %}
+
+                    <div class="card">
+                        <div class="card-header"><h4>Vitals & Metrics</h4></div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item"><strong>Height:</strong> <span>{{ patient.initial_height or 'N/A' }} cm</span></div>
+                                <div class="info-item"><strong>Weight:</strong> <span>{{ patient.initial_weight or 'N/A' }} kg</span></div>
+                                <div class="info-item"><strong>Temperature:</strong>
+                                    <span>
+                                        {% if patient.initial_temperature %}
+                                            {% set temp_f = (patient.initial_temperature * 9/5) + 32 %}
+                                            <span class="{{ 'abnormal-vital' if temp_f < 97 or temp_f > 99 }}">{{ "%.1f"|format(temp_f) }} °F</span>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="info-item"><strong>Blood Pressure:</strong>
+                                    <span>
+                                        {% if patient.initial_blood_pressure and '/' in patient.initial_blood_pressure %}{% set bp_parts = patient.initial_blood_pressure.split('/') %}<span class="{{ 'abnormal-vital' if (bp_parts[0]|trim|int > 129 or bp_parts[1]|trim|int > 79) or (bp_parts[0]|trim|int < 90 or bp_parts[1]|trim|int < 60) }}">{{ patient.initial_blood_pressure }} mmHg</span>
+                                        {% else %}{{ patient.initial_blood_pressure or 'N/A' }}{% endif %}
+                                    </span>
+                                </div>
+                                <div class="info-item"><strong>Heart Rate:</strong><span>{% if patient.initial_pulse_rate %}<span class="{{ 'abnormal-vital' if patient.initial_pulse_rate < 60 or patient.initial_pulse_rate > 100 }}">{{ patient.initial_pulse_rate }} bpm</span>{% else %}N/A{% endif %}</span></div>
+                                <div class="info-item"><strong>Blood Sugar:</strong><span>{% if patient.blood_sugar %}<span class="{{ 'abnormal-vital' if patient.blood_sugar > 125 }}">{{ patient.blood_sugar }} mg/dL</span>{% else %}N/A{% endif %}</span></div>
+                                <div class="info-item"><strong>BMI:</strong><span>{% if patient.initial_bmi %}<span class="{{ 'abnormal-vital' if patient.initial_bmi > 24.9 }}">{{ "%.2f"|format(patient.initial_bmi) }}</span>{% else %}N/A{% endif %}</span></div>
+                                <div class="info-item"><strong>BSA:</strong> <span>{{ "%.2f"|format(patient.initial_bsa) if patient.initial_bsa else 'N/A' }} m²</span></div>
+                                <div class="info-item"><strong>Affected BSA:</strong> <span>{{ patient.affected_bsa_percentage or 'N/A' }} %</span></div>
+                                {% for vital in additional_vitals %}
+                                <div class="info-item" style="grid-column: 1 / -1;"><strong>{{ vital.vital_name }}:</strong> <span>{{ vital.vital_value }}</span></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <div class="card-header"><h4>Initial Medical Notes</h4></div>
+                        <div class="card-body">
+                            <div class="notes-grid">
+                                <div>
+                                    <h5>History & Patient Concerns</h5>
+                                    <div class="medical-notes">{{ patient.past_medical_history or 'No history recorded.' }}</div>
+                                </div>
+                                <div>
+                                    <h5>Initial Treatment Plan</h5>
+                                    <div class="medical-notes">{{ patient.initial_treatment_plan or 'No plan recorded.' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="card">
-            <div class="card-header"><h4><i class="fa-solid fa-book-medical"></i> Initial Medical Notes</h4></div>
-            <div class="card-body">
-                <h5>History & Patient Concerns</h5>
-                <div class="medical-notes">{{ patient.past_medical_history or 'No history or concerns recorded.' }}</div>
-                <h5 style="margin-top: 20px;">Initial Treatment Plan</h5>
-                <div class="medical-notes">{{ patient.initial_treatment_plan or 'No initial treatment plan recorded.' }}</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="history" class="tab-pane">
-        <div class="history-layout">
-            <div class="visit-list-container">
-                <div class="visit-list-item" data-visit-type="Initial Registration" data-visit-date="{{ patient.date_of_registration.strftime('%d %b %Y') }}" data-diagnosis="{{ patient.diagnosis or 'N/A' }}" data-complaints="{{ patient.complaints or 'N/A' }}" data-modal-id="initialVisitModal">
-                    <div class="icon"><i class="fa-solid fa-file-medical"></i></div>
-                    <div class="info"><span>Initial Registration</span><small>{{ patient.date_of_registration.strftime('%d %b %Y') }}</small></div>
+            <div id="history" class="tab-pane">
+                <div class="card">
+                    <div class="card-body history-layout">
+                        <div class="visit-list-container">
+                            <div class="visit-list-item active" data-visit-type="Initial Registration" data-visit-date="{{ patient.date_of_registration.strftime('%d %b %Y') }}" data-diagnosis="{{ patient.diagnosis or 'N/A' }}" data-complaints="{{ patient.complaints or 'N/A' }}" data-modal-id="initialVisitModal">
+                                <div class="icon"><i class="fa-solid fa-file-medical"></i></div>
+                                <div class="info"><span>Initial Registration</span><small>{{ patient.date_of_registration.strftime('%d %b %Y') }}</small></div>
+                            </div>
+                            {% for visit in followup_visits %}
+                            <div class="visit-list-item" data-visit-type="Follow-up Visit" data-visit-date="{{ visit.visit_date.strftime('%d %b %Y') }}" data-diagnosis="{{ visit.diagnosis or 'N/A' }}" data-complaints="{{ visit.updated_complaints or 'N/A' }}" data-visit-id="{{ visit.id }}">
+                                <div class="icon"><i class="fa-solid fa-stethoscope"></i></div>
+                                <div class="info"><span>Follow-up</span><small>{{ visit.visit_date.strftime('%d %b %Y') }}</small></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div id="visit-detail-view" class="visit-detail-container"></div>
+                    </div>
                 </div>
-                {% for visit in followup_visits %}
-                <div class="visit-list-item" data-visit-type="Follow-up Visit" data-visit-date="{{ visit.visit_date.strftime('%d %b %Y') }}" data-diagnosis="{{ visit.diagnosis or 'N/A' }}" data-complaints="{{ visit.updated_complaints or 'N/A' }}" data-visit-id="{{ visit.id }}">
-                    <div class="icon"><i class="fa-solid fa-stethoscope"></i></div>
-                    <div class="info"><span>Follow-up</span><small>{{ visit.visit_date.strftime('%d %b %Y') }}</small></div>
+            </div>
+
+            <div id="prescriptions" class="tab-pane">
+                {% for p in prescriptions %}
+                <div class="card">
+                    <div class="card-header">
+                        <h4>{{ p.prescription.prescription_date.strftime('%d %b %Y') }} <small style="font-weight: 400; color: #555;">(Dr. {{ p.prescription.doctor_name }})</small></h4>
+                        <form action="{{ url_for('delete_prescription', prescription_id=p.prescription.id) }}" method="POST" onsubmit="return confirm('Delete this prescription?');">
+                            <button type="submit" class="btn btn-danger btn-icon" title="Delete Prescription"><i class="fa-solid fa-trash-alt"></i></button>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <table class="prescription-table">
+                            <thead><tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Notes</th></tr></thead>
+                            <tbody>
+                                {% for item in p['items'] %}
+                                <tr><td>{{ item.medication_name }}</td><td>{{ item.dosage }}</td><td>{{ item.frequency }}</td><td>{{ item.duration }}</td><td>{{ item.notes }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card"><p class="empty-state">No prescriptions found.</p></div>
+                {% endfor %}
+            </div>
+
+            <div id="gallery" class="tab-pane">
+                <div class="card">
+                    <div class="card-body">
+                        {% if images %}<div class="image-grid">
+                            {% for image in images %}{% if image.image_filename %}
+                            <div class="image-card">
+                                <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
+                                    <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Patient Image">
+                                </a>
+                                <form action="{{ url_for('delete_image', image_id=image.id) }}" method="POST" onsubmit="return confirm('Delete this image?');">
+                                    <button type="submit" class="btn-delete-img">&times;</button>
+                                </form>
+                            </div>
+                            {% endif %}{% endfor %}
+                        </div>{% else %}<p class="empty-state">No images have been uploaded.</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div id="reports" class="tab-pane">
+                <div class="card">
+                    <div class="card-body">
+                        {% if lab_reports %}<div class="lab-reports-grid">
+                            {% for report in lab_reports %}
+                            <div class="report-card">
+                                <div>
+                                    <div class="report-card-header">
+                                        <h4>{{ report.report_type }}</h4>
+                                        <span class="status-badge {{ report.status|lower }}">{{ report.status }}</span>
+                                    </div>
+                                    <div class="report-card-body">
+                                        <p><strong>Date:</strong> {{ report.report_date.strftime('%d %b %Y') }} | <strong>By:</strong> Dr. {{ report.doctor_name }}</p>
+                                    </div>
+                                </div>
+                                <div class="report-card-footer">
+                                    <div>
+                                        {% if report.file_path %}
+                                        <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-lines"></i> View Report</a>
+                                        {% else %}
+                                        <span style="color: #94a3b8; font-style: italic; font-size: 0.9em;">Report not yet available</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if session.get('role_id') == 1 %}
+                                    <form action="{{ url_for('delete_lab_report', report_id=report.id) }}" method="POST" onsubmit="return confirm('Delete this report?');" style="margin: 0;">
+                                        <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete Report"><i class="fa-solid fa-trash-alt"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>{% else %}<p class="empty-state">No lab reports have been requested.</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if admission %}
+            <div id="inpatient" class="tab-pane">
+                <div class="card">
+                    <div class="card-header"><h4>Add Progress Note (Bed {{ admission.bed_number }})</h4></div>
+                    <div class="card-body">
+                        <form action="{{ url_for('add_daily_note', assignment_id=admission.id) }}" method="POST">
+                            <textarea name="notes" class="form-control" placeholder="Enter new progress note..." required rows="4"></textarea>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Add Note</button>
+                        </form>
+                        <a href="{{ url_for('discharge_patient', assignment_id=admission.id) }}" class="btn btn-danger" style="margin-top:20px;">Discharge Patient</a>
+                    </div>
+                </div>
+                {% for note in daily_notes %}
+                <div class="card">
+                    <div class="card-header">Note by Dr. {{ note.doctor_name }} on {{ note.note_date.strftime('%d %b %Y, %I:%M %p') }}</div>
+                    <div class="card-body">{{ note.notes }}</div>
+                </div>
+                {% else %}<div class="card"><p class="empty-state">No progress notes recorded.</p></div>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if admission_history %}
+            <div id="admission_history" class="tab-pane">
+                {% for history in admission_history %}
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Admission to Bed {{ history.bed_number }}</h4>
+                        <a href="{{ url_for('edit_discharge_summary', assignment_id=history.id) }}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen-to-square"></i> Edit Summary</a>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Admitted:</strong> {{ history.admission_date.strftime('%d %b %Y') }} | <strong>Discharged:</strong> {{ history.discharge_date.strftime('%d %b %Y') }}</p>
+                        <div class="medical-notes" style="white-space: pre-wrap;">{{ history.discharge_summary or 'No summary was recorded.' }}</div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-            <div id="visit-detail-view" class="visit-detail-container"></div>
+            {% endif %}
         </div>
     </div>
 
-    <div id="prescriptions" class="tab-pane">
-        <div class="data-section">
-            <h2><i class="fa-solid fa-pills"></i> Prescriptions</h2>
-            {% for p in prescriptions %}
-            <div class="card">
-                <div class="card-header">
-                    <h4>{{ p.prescription.prescription_date.strftime('%d %b %Y') }} <small style="font-weight: 400; color: #555;">(Dr. {{ p.prescription.doctor_name }})</small></h4>
-                    <form action="{{ url_for('delete_prescription', prescription_id=p.prescription.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this entire prescription?');">
-                        <button type="submit" class="btn btn-danger btn-icon"><i class="fa-solid fa-trash-alt"></i></button>
-                    </form>
+    <!-- Modals -->
+    <div id="patientInfoModal" class="modal-backdrop">
+        <div class="modal-content"><div class="modal-header"><h2>Edit Patient Information</h2><button class="modal-close" onclick="closeModal('patientInfoModal')">&times;</button></div>
+            <form action="{{ url_for('edit_patient', patient_id=patient.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group"><label>Name</label><input type="text" name="name" value="{{ patient.name }}" class="form-control" required></div>
+                    <div class="form-group"><label>Date of Birth</label><input type="date" name="dob" value="{{ patient.dob.strftime('%Y-%m-%d') if patient.dob }}" class="form-control" required></div>
+                    <div class="form-group"><label>Gender</label><select name="gender" class="form-control" required><option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option><option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option><option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option></select></div>
+                    <div class="form-group"><label>Mobile Number</label><input type="text" name="mobile_number" value="{{ patient.mobile_number }}" class="form-control"></div>
                 </div>
-                <div class="card-body">
-                    {% if p.prescription.condition_notes %}
-                        <p><strong>Notes:</strong> {{ p.prescription.condition_notes }}</p>
-                    {% endif %}
-                    <table class="styled-table">
-                        <thead><tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Notes</th></tr></thead>
-                        <tbody>
-                            {% for item in p['items'] %}
-                            <tr><td>{{ item.medication_name }}</td><td>{{ item.dosage }}</td><td>{{ item.frequency }}</td><td>{{ item.duration }}</td><td>{{ item.notes }}</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('patientInfoModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="initialVisitModal" class="modal-backdrop">
+        <div class="modal-content"><div class="modal-header"><h2>Edit Initial Visit Details</h2><button class="modal-close" onclick="closeModal('initialVisitModal')">&times;</button></div>
+            <form action="{{ url_for('edit_initial_visit', patient_id=patient.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group"><label>Complaints</label><textarea name="complaints" class="form-control" rows="4">{{ patient.complaints }}</textarea></div>
+                    <div class="form-group"><label>Diagnosis</label><input type="text" name="diagnosis" value="{{ patient.diagnosis }}" class="form-control"></div>
                 </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('initialVisitModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="followUpModal" class="modal-backdrop">
+        <div class="modal-content"><div class="modal-header"><h2>Edit Follow-up Visit</h2><button class="modal-close" onclick="closeModal('followUpModal')">&times;</button></div>
+            <form id="followUpForm" method="POST">
+                <div class="modal-body"><div class="form-group"><label>Complaints</label><textarea id="followUpComplaints" name="complaints" class="form-control" rows="4"></textarea></div></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('followUpModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="qrCodeModal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Scan for Mobile Upload</h2>
+                <button class="modal-close" onclick="closeModal('qrCodeModal')">&times;</button>
             </div>
-            {% else %}<p class="empty-state">No prescriptions found.</p>{% endfor %}
+            <div class="modal-body" style="text-align: center;">
+                <div id="qrcode-display-area"></div> 
+                <p style="margin-top: 15px;">Scan to upload images from your mobile device.</p>
+            </div>
         </div>
     </div>
 
-    <div id="gallery" class="tab-pane">
-        <div class="data-section">
-            <h2><i class="fa-solid fa-images"></i> Image Gallery</h2>
-            <form action="{{ url_for('upload_patient_image', patient_id=patient.id) }}" method="post" enctype="multipart/form-data" class="form-inline" style="margin-bottom: 25px;">
-                <input type="file" name="patient_image" required class="form-control">
-                <button type="submit" class="btn btn-primary">Upload Image</button>
-            </form>
-            <div class="image-grid">
-    {% for image in images %}
-        {# This 'if' statement prevents errors by skipping records with no filename #}
-        {% if image.image_filename %}
-        <div class="image-card">
-            <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
-                <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Patient Image">
-            </a>
-            <form action="{{ url_for('delete_image', image_id=image.id) }}" method="POST" onsubmit="return confirm('Delete this image?');">
-                <button type="submit" class="btn-delete-img">&times;</button>
+    <div id="addFollowUpModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h2>Add Follow-up for {{ patient.name }}</h2>
+                <button class="modal-close" onclick="closeModal('addFollowUpModal')">&times;</button>
+            </div>
+            <form action="{{ url_for('add_follow_up_visit', patient_id=patient.id) }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Current Complaints</label>
+                        <textarea name="complaints" class="form-control" rows="3" placeholder="Enter current complaints..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Examination Findings</label>
+                        <textarea name="examination_findings" class="form-control" rows="4" placeholder="Enter examination findings..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Current Diagnosis</label>
+                        <textarea name="diagnosis" class="form-control" rows="2" placeholder="Enter or update diagnosis..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>New/Updated Treatment Plan</label>
+                        <textarea name="updated_treatment_plan" class="form-control" rows="4" placeholder="Enter new treatment plan..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addFollowUpModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Visit</button>
+                </div>
             </form>
         </div>
+    </div>
+
+    <div id="prescriptionModal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Prescription for {{ patient.name }}</h2>
+                <button class="modal-close" onclick="closeModal('prescriptionModal')">&times;</button>
+            </div>
+            <form action="{{ url_for('create_prescription') }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="condition_notes">Condition / Notes</label>
+                        <textarea name="condition_notes" class="form-control" rows="3" placeholder="e.g., Acute Psoriasis Flare-up on elbows and knees..."></textarea>
+                    </div>
+                     <div class="form-group">
+                        <label for="next_follow_up_date">Next Follow-up Date</label>
+                        <input type="date" id="next_follow_up_date" name="next_follow_up_date" class="form-control">
+                    </div>
+                    <hr style="margin: 20px 0;">
+                    <h4>Medications</h4>
+                    <div id="medications-container"></div>
+                    <button type="button" class="btn" onclick="addMedicationRow()">
+                        <i class="fa-solid fa-plus"></i> Add Medication
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('prescriptionModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Prescription</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <datalist id="medication-list">
+        {% for med in medications %}
+            <option value="{{ med.name }}">
+        {% endfor %}
+    </datalist>
+
+    <!-- Unified Investigation Request Modal -->
+    <div id="requestModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h2>Request Investigation</h2>
+                <button class="modal-close" onclick="closeModal('requestModal')">&times;</button>
+            </div>
+            <form id="requestForm" action="{{ url_for('request_investigation', patient_id=patient.id) }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                    <input type="hidden" name="uhid" value="{{ patient.patient_code }}">
+                    <div class="form-group">
+                        <label for="request_type_select">Type of Investigation</label>
+                        <select id="request_type_select" name="request_type" class="form-control" required>
+                            <option value="" disabled selected>-- Select an option --</option>
+                            <option value="radiology">Radiology Scan</option>
+                            <option value="lab">Lab Test</option>
+                        </select>
+                    </div>
+                    <div id="radiology_fields" style="display: none;">
+                        <!-- Radiology-specific fields are dynamically inserted by JavaScript -->
+                    </div>
+                    <div id="lab_fields" style="display: none;">
+                        <!-- Lab-specific fields are dynamically inserted by JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('requestModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="print-only-section">
+        <div class="print-header"><h1>Patient Medical Summary</h1><p>Generated on: {{ now.strftime('%d %b %Y, %I:%M %p') }}</p></div>
+        <div class="print-patient-info">
+            <div><strong>Patient:</strong> {{ patient.name }}</div><div><strong>ID:</strong> {{ patient.patient_code }}</div>
+            <div><strong>DOB:</strong> {{ patient.dob.strftime('%d %b %Y') if patient.dob }} ({{ patient.age }} years)</div>
+            <div><strong>Gender:</strong> {{ patient.gender }}</div>
+        </div>
+        <h3 class="print-section-title">Vitals & Metrics (at Registration)</h3>
+        <table class="print-table">
+            <thead><tr><th>Vital / Metric</th><th>Value</th><th>Standard Range</th></tr></thead>
+            <tbody>
+                <tr><td>Temperature</td><td class="{{ 'abnormal-value' if patient.initial_temperature and (patient.initial_temperature < 36.1 or patient.initial_temperature > 37.0) else 'normal-value' }}">{{ "%.1f"|format(patient.initial_temperature) if patient.initial_temperature else 'N/A' }} °C</td><td>36.1 - 37.0 °C</td></tr>
+                <tr><td>Blood Pressure</td><td class="{% if patient.initial_blood_pressure and '/' in patient.initial_blood_pressure %}{% set bp_parts = patient.initial_blood_pressure.split('/') %}{{ 'abnormal-value' if (bp_parts[0]|trim|int > 129 or bp_parts[1]|trim|int > 79) or (bp_parts[0]|trim|int < 90 or bp_parts[1]|trim|int < 60) else 'normal-value' }}{% else %}normal-value{% endif %}">{{ patient.initial_blood_pressure or 'N/A' }}</td><td>90/60 - 129/79 mmHg</td></tr>
+                <tr><td>Heart Rate</td><td class="{{ 'abnormal-value' if patient.initial_pulse_rate and (patient.initial_pulse_rate < 60 or patient.initial_pulse_rate > 100) else 'normal-value' }}">{{ patient.initial_pulse_rate or 'N/A' }} bpm</td><td>60 - 100 bpm</td></tr>
+                <tr><td>Blood Sugar</td><td class="{{ 'abnormal-value' if patient.blood_sugar and patient.blood_sugar > 125 else 'normal-value' }}">{{ patient.blood_sugar or 'N/A' }} mg/dL</td><td>70 - 125 mg/dL</td></tr>
+                <tr><td>BMI</td><td class="{{ 'abnormal-value' if patient.initial_bmi and (patient.initial_bmi < 18.5 or patient.initial_bmi > 24.9) else 'normal-value' }}">{{ "%.2f"|format(patient.initial_bmi) if patient.initial_bmi else 'N/A' }}</td><td>18.5 - 24.9</td></tr>
+                <tr><td>BSA</td><td class="normal-value">{{ "%.2f"|format(patient.initial_bsa) if patient.initial_bsa else 'N/A' }} m²</td><td>N/A</td></tr>
+                <tr><td>Affected BSA</td><td class="normal-value">{{ patient.affected_bsa_percentage or 'N/A' }} %</td><td>N/A</td></tr>
+            </tbody>
+        </table>
+        <h3 class="print-section-title">Medical History & Concerns</h3><div class="print-notes">{{ patient.past_medical_history or 'No history or concerns recorded.' }}</div>
+        <h3 class="print-section-title">Most Recent Visit</h3>
+        {% if followup_visits %}
+            {% set latest_visit = followup_visits[0] %}
+            <div class="print-visit">
+                <strong>Follow-up ({{ latest_visit.visit_date.strftime('%d %b %Y') }})</strong> by Dr. {{ latest_visit.doctor_name }}
+                <p><strong>Complaints:</strong> {{ latest_visit.updated_complaints or 'N/A' }}</p>
+                <p><strong>Diagnosis:</strong> {{ latest_visit.diagnosis or 'N/A' }}</p>
+            </div>
+        {% else %}
+            <div class="print-visit">
+                <strong>Initial Visit ({{ patient.date_of_registration.strftime('%d %b %Y') }})</strong>
+                <p><strong>Complaints:</strong> {{ patient.complaints or 'N/A' }}</p>
+                <p><strong>Diagnosis:</strong> {{ patient.diagnosis or 'N/A' }}</p>
+            </div>
         {% endif %}
-    {% else %}
-    <p class="empty-state">No images have been uploaded.</p>
-    {% endfor %}
-</div>
-        </div>
+        {% if prescriptions %}
+        <h3 class="print-section-title">Most Recent Prescription ({{ prescriptions[0].prescription.prescription_date.strftime('%d %b %Y') }})</h3>
+        <p>Prescribed by Dr. {{ prescriptions[0].prescription.doctor_name }}</p>
+        <table class="print-table">
+            <thead><tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Notes</th></tr></thead>
+            <tbody>
+                {% for item in prescriptions[0]['items'] %}
+                <tr><td>{{ item.medication_name }}</td><td>{{ item.dosage }}</td><td>{{ item.frequency }}</td><td>{{ item.duration }}</td><td>{{ item.notes }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        <div class="print-footer"><p>-- End of Summary --</p></div>
     </div>
 
-    <div id="reports" class="tab-pane">
-        <div class="data-section">
-            <h2><i class="fa-solid fa-vials"></i> Lab Reports</h2>
-            {% for report in lab_reports %}<div class="card">
-                <div class="card-header"><h4>{{ report.report_type }}</h4><span class="status-badge {{ report.status|lower }}">{{ report.status }}</span></div>
-                <div class="card-body">
-                    <p><strong>Date:</strong> {{ report.report_date.strftime('%d %b %Y') }} | <strong>Requested by:</strong> Dr. {{ report.doctor_name }}</p>
-                    {% if report.file_path %}<a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="btn btn-secondary">View Report File</a>{% endif %}
-                </div>
-            </div>{% else %}<p class="empty-state">No lab reports found.</p>{% endfor %}
-        </div>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        window.labTestCategories = {{ lab_test_categories|tojson }};
+    </script>
 
-    {% if admission %}<div id="inpatient" class="tab-pane">
-        <div class="data-section">
-            <h2><i class="fa-solid fa-bed-pulse"></i> In-Patient Details (Bed {{ admission.bed_number }})</h2>
-            <form action="{{ url_for('add_daily_note', assignment_id=admission.id) }}" method="POST">
-                <textarea name="notes" class="form-control" placeholder="Add a new progress note..." required rows="4"></textarea>
-                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Add Note</button>
-            </form>
-            <a href="{{ url_for('discharge_patient', assignment_id=admission.id) }}" class="btn btn-danger" style="margin-top:20px;">Discharge Patient</a>
-            <div style="margin-top:30px;">{% for note in daily_notes %}<div class="card"><div class="card-header">Note by Dr. {{ note.doctor_name }} on {{ note.note_date.strftime('%d %b %Y, %I:%M %p') }}</div><div class="card-body">{{ note.notes }}</div></div>{% else %}<p class="empty-state">No progress notes recorded.</p>{% endfor %}</div>
-        </div>
-    </div>{% endif %}
-</div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- 1. Universal Modal & QR Code Functions ---
+        let qrCodeGenerated = false;
 
-<div id="patientInfoModal" class="modal-backdrop">
-    <div class="modal-content"><div class="modal-header"><h2>Edit Patient Information</h2><button class="modal-close" onclick="closeModal('patientInfoModal')">&times;</button></div>
-        <form action="{{ url_for('edit_patient', patient_id=patient.id) }}" method="POST">
-            <div class="modal-body">
-                <div class="form-group"><label>Name</label><input type="text" name="name" value="{{ patient.name }}" class="form-control" required></div>
-                <div class="form-group"><label>Date of Birth</label><input type="date" name="dob" value="{{ patient.dob.strftime('%Y-%m-%d') if patient.dob }}" class="form-control" required></div>
-                <div class="form-group"><label>Gender</label><select name="gender" class="form-control" required><option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option><option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option><option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option></select></div>
-                <div class="form-group"><label>Mobile Number</label><input type="text" name="mobile_number" value="{{ patient.mobile_number }}" class="form-control"></div>
-            </div>
-            <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('patientInfoModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
-        </form>
-    </div>
-</div>
-
-<div id="initialVisitModal" class="modal-backdrop">
-    <div class="modal-content"><div class="modal-header"><h2>Edit Initial Visit Details</h2><button class="modal-close" onclick="closeModal('initialVisitModal')">&times;</button></div>
-        <form action="{{ url_for('edit_initial_visit', patient_id=patient.id) }}" method="POST">
-            <div class="modal-body">
-                <div class="form-group"><label>Complaints</label><textarea name="complaints" class="form-control" rows="4">{{ patient.complaints }}</textarea></div>
-                <div class="form-group"><label>Diagnosis</label><input type="text" name="diagnosis" value="{{ patient.diagnosis }}" class="form-control"></div>
-            </div>
-            <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('initialVisitModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
-        </form>
-    </div>
-</div>
-
-<div id="followUpModal" class="modal-backdrop">
-    <div class="modal-content"><div class="modal-header"><h2>Edit Follow-up Visit</h2><button class="modal-close" onclick="closeModal('followUpModal')">&times;</button></div>
-        <form id="followUpForm" method="POST">
-            <div class="modal-body"><div class="form-group"><label>Complaints</label><textarea id="followUpComplaints" name="complaints" class="form-control" rows="4"></textarea></div></div>
-            <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('followUpModal')">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
-        </form>
-    </div>
-</div>
-
-<div id="qrCodeModal" class="modal-backdrop">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Scan for Mobile Upload</h2>
-            <button class="modal-close" onclick="closeModal('qrCodeModal')">&times;</button>
-        </div>
-        <div class="modal-body" style="text-align: center;">
-            <div id="qrcode-display-area"></div> 
-            <p style="margin-top: 15px;">Scan to upload images from your mobile device.</p>
-        </div>
-    </div>
-</div>
-
-<div id="addFollowUpModal" class="modal-backdrop">
-    <div class="modal-content" style="max-width: 550px;">
-        <div class="modal-header">
-            <h2>Add Follow-up for {{ patient.name }}</h2>
-            <button class="modal-close" onclick="closeModal('addFollowUpModal')">&times;</button>
-        </div>
-        <form action="{{ url_for('add_follow_up_visit', patient_id=patient.id) }}" method="POST">
-            <input type="hidden" name="patient_id" value="{{ patient.id }}">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Current Complaints</label>
-                    <textarea name="complaints" class="form-control" rows="3" placeholder="Enter current complaints..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Examination Findings</label>
-                    <textarea name="examination_findings" class="form-control" rows="4" placeholder="Enter examination findings..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Current Diagnosis</label>
-                    <textarea name="diagnosis" class="form-control" rows="2" placeholder="Enter or update diagnosis..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>New/Updated Treatment Plan</label>
-                    <textarea name="updated_treatment_plan" class="form-control" rows="4" placeholder="Enter new treatment plan..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addFollowUpModal')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Visit</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="prescriptionModal" class="modal-backdrop">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Create Prescription for {{ patient.name }}</h2>
-            <button class="modal-close" onclick="closeModal('prescriptionModal')">&times;</button>
-        </div>
-        <form action="{{ url_for('create_prescription') }}" method="POST">
-            <input type="hidden" name="patient_id" value="{{ patient.id }}">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="condition_notes">Condition / Notes</label>
-                    <textarea name="condition_notes" class="form-control" rows="3" placeholder="e.g., Acute Psoriasis Flare-up on elbows and knees..."></textarea>
-                </div>
-                 <div class="form-group">
-                    <label for="next_follow_up_date">Next Follow-up Date</label>
-                    <input type="date" id="next_follow_up_date" name="next_follow_up_date" class="form-control">
-                </div>
-                <hr style="margin: 20px 0;">
-                <h4>Medications</h4>
-                <div id="medications-container"></div>
-                <button type="button" class="btn" onclick="addMedicationRow()">
-                    <i class="fa-solid fa-plus"></i> Add Medication
-                </button>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('prescriptionModal')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Prescription</button>
-            </div>
-        </form>
-    </div>
-</div>
-<datalist id="medication-list">
-    {% for med in medications %}
-        <option value="{{ med.name }}">
-    {% endfor %}
-</datalist>
-
-<div id="radiologyModal" class="modal-backdrop">
-    <div class="modal-content" style="max-width: 550px;">
-        <div class="modal-header">
-            <h2>Request Radiology Scan</h2>
-            <button class="modal-close" onclick="closeModal('radiologyModal')">&times;</button>
-        </div>
-        <form action="{{ url_for('request_lab_report', patient_id=patient.id) }}" method="POST">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Patient UHID</label>
-                    <input type="text" name="uhid" class="form-control" value="{{ patient.patient_code }}" readonly>
-                </div>
-                <div class="form-group">
-                    <label>Department</label>
-                    <input type="text" name="department" value="Radiology" class="form-control" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="scan_type">Scan Type</label>
-                    <select name="radiology_scan_type" class="form-control" required>
-                        <option value="" disabled selected>Select Scan Type</option>
-                        <option value="CT">CT</option> <option value="MR">MR</option>
-                        <option value="XRAY">XRAY</option> <option value="US">ULTRASOUND</option>
-                        <option value="PET">PET</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="body_part">Body Part</label>
-                    <input type="text" name="radiology_body_part" class="form-control" 
-                           placeholder="e.g., BRAIN, CHEST" required
-                           oninput="this.value = this.value.toUpperCase()">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('radiologyModal')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Request Scan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-
-<div class="print-only-section">
-    <div class="print-header"><h1>Patient Medical Summary</h1><p>Generated on: {{ now.strftime('%d %b %Y, %I:%M %p') }}</p></div>
-    <div class="print-patient-info">
-        <div><strong>Patient:</strong> {{ patient.name }}</div><div><strong>ID:</strong> {{ patient.patient_code }}</div>
-        <div><strong>DOB:</strong> {{ patient.dob.strftime('%d %b %Y') if patient.dob }} ({{ patient.age }} years)</div>
-        <div><strong>Gender:</strong> {{ patient.gender }}</div>
-    </div>
-    <h3 class="print-section-title">Vitals & Metrics (at Registration)</h3>
-    <table class="print-table">
-        <thead><tr><th>Vital / Metric</th><th>Value</th><th>Standard Range</th></tr></thead>
-        <tbody>
-            <tr><td>Temperature</td><td class="{{ 'abnormal-value' if patient.initial_temperature and (patient.initial_temperature < 36.1 or patient.initial_temperature > 37.0) else 'normal-value' }}">{{ "%.1f"|format(patient.initial_temperature) if patient.initial_temperature else 'N/A' }} °C</td><td>36.1 - 37.0 °C</td></tr>
-            <tr><td>Blood Pressure</td><td class="{% if patient.initial_blood_pressure and '/' in patient.initial_blood_pressure %}{% set bp_parts = patient.initial_blood_pressure.split('/') %}{{ 'abnormal-value' if (bp_parts[0]|trim|int > 129 or bp_parts[1]|trim|int > 79) or (bp_parts[0]|trim|int < 90 or bp_parts[1]|trim|int < 60) else 'normal-value' }}{% else %}normal-value{% endif %}">{{ patient.initial_blood_pressure or 'N/A' }}</td><td>90/60 - 129/79 mmHg</td></tr>
-            <tr><td>Heart Rate</td><td class="{{ 'abnormal-value' if patient.initial_pulse_rate and (patient.initial_pulse_rate < 60 or patient.initial_pulse_rate > 100) else 'normal-value' }}">{{ patient.initial_pulse_rate or 'N/A' }} bpm</td><td>60 - 100 bpm</td></tr>
-            <tr><td>Blood Sugar</td><td class="{{ 'abnormal-value' if patient.blood_sugar and patient.blood_sugar > 125 else 'normal-value' }}">{{ patient.blood_sugar or 'N/A' }} mg/dL</td><td>70 - 125 mg/dL</td></tr>
-            <tr><td>BMI</td><td class="{{ 'abnormal-value' if patient.initial_bmi and (patient.initial_bmi < 18.5 or patient.initial_bmi > 24.9) else 'normal-value' }}">{{ "%.2f"|format(patient.initial_bmi) if patient.initial_bmi else 'N/A' }}</td><td>18.5 - 24.9</td></tr>
-            <tr><td>BSA</td><td class="normal-value">{{ "%.2f"|format(patient.initial_bsa) if patient.initial_bsa else 'N/A' }} m²</td><td>N/A</td></tr>
-            <tr><td>Affected BSA</td><td class="normal-value">{{ patient.affected_bsa_percentage or 'N/A' }} %</td><td>N/A</td></tr>
-        </tbody>
-    </table>
-    <h3 class="print-section-title">Medical History & Concerns</h3><div class="print-notes">{{ patient.past_medical_history or 'No history or concerns recorded.' }}</div>
-    <h3 class="print-section-title">Most Recent Visit</h3>
-    {% if followup_visits %}
-        {% set latest_visit = followup_visits[0] %}
-        <div class="print-visit">
-            <strong>Follow-up ({{ latest_visit.visit_date.strftime('%d %b %Y') }})</strong> by Dr. {{ latest_visit.doctor_name }}
-            <p><strong>Complaints:</strong> {{ latest_visit.updated_complaints or 'N/A' }}</p>
-            <p><strong>Diagnosis:</strong> {{ latest_visit.diagnosis or 'N/A' }}</p>
-        </div>
-    {% else %}
-        <div class="print-visit">
-            <strong>Initial Visit ({{ patient.date_of_registration.strftime('%d %b %Y') }})</strong>
-            <p><strong>Complaints:</strong> {{ patient.complaints or 'N/A' }}</p>
-            <p><strong>Diagnosis:</strong> {{ patient.diagnosis or 'N/A' }}</p>
-        </div>
-    {% endif %}
-    {% if prescriptions %}
-    <h3 class="print-section-title">Most Recent Prescription ({{ prescriptions[0].prescription.prescription_date.strftime('%d %b %Y') }})</h3>
-    <p>Prescribed by Dr. {{ prescriptions[0].prescription.doctor_name }}</p>
-    <table class="print-table">
-        <thead><tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Notes</th></tr></thead>
-        <tbody>
-            {% for item in prescriptions[0]['items'] %}
-            <tr><td>{{ item.medication_name }}</td><td>{{ item.dosage }}</td><td>{{ item.frequency }}</td><td>{{ item.duration }}</td><td>{{ item.notes }}</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-    <div class="print-footer"><p>-- End of Summary --</p></div>
-</div>
-
-
-<script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-
-    // Modal and QR Code Functions
-    let qrCodeGenerated = false;
-
-    function generateQrCode() {
-        // This function will only run once to create the QR code
-        if (!qrCodeGenerated) {
+        function generateQrCode() {
+            if (qrCodeGenerated) return; // Only generate once
             const qrArea = document.getElementById("qrcode-display-area");
             if (!qrArea) {
                 console.error("QR Code display area not found.");
@@ -653,146 +1214,233 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             try {
                 const urlToEncode = "{{ url_for('mobile_upload', patient_id=patient.id, _external=True) }}";
-                new QRCode(qrArea, {
-                    text: urlToEncode,
-                    width: 200,
-                    height: 200
-                });
+                new QRCode(qrArea, { text: urlToEncode, width: 200, height: 200 });
                 qrCodeGenerated = true;
             } catch (e) {
                 console.error("Error generating QR Code. Is the qrcode.min.js library loaded?", e);
                 qrArea.innerHTML = '<p style="color:red;">Could not generate QR code.</p>';
             }
         }
-    }
 
-    window.openModal = function(modalId) {
-        // This is the master function to open any modal
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            // If it's the QR code modal, try to generate the code
-            if (modalId === 'qrCodeModal') {
-                generateQrCode();
+        window.openModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                if (modalId === 'qrCodeModal') {
+                    generateQrCode();
+                }
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+            } else {
+                console.error("Modal with ID '" + modalId + "' not found!");
             }
-            modal.style.display = 'flex';
-        } else {
-            console.error("Modal with ID '" + modalId + "' not found!");
         }
-    }
 
-    window.closeModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'none';
+        window.closeModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Re-enable scrolling
+            }
         }
-    }
 
-    window.openFollowUpModal = function(visitId, complaints) {
-        const form = document.getElementById('followUpForm');
-        form.action = `/visit/${visitId}/edit`;
-        document.getElementById('followUpComplaints').value = complaints;
-        openModal('followUpModal');
-    }
-
-    // Prescription Modal Functions
-    let medIndex = 0;
-    window.addMedicationRow = function() {
-        const container = document.getElementById('medications-container');
-        if (!container) return;
-        const medItem = document.createElement('div');
-        medItem.className = 'medication-item';
-        medItem.id = `med-row-${medIndex}`;
-
-        medItem.innerHTML = `
-            <input list="medication-list" class="form-control" name="med_name_${medIndex}" placeholder="Medication Name" required>
-            <input type="text" class="form-control" name="med_dosage_${medIndex}" placeholder="Dosage (e.g., 50mg)">
-            <input type="text" class="form-control" name="med_frequency_${medIndex}" placeholder="Frequency (e.g., 1-0-1)">
-            <input type="text" class="form-control" name="med_duration_${medIndex}" placeholder="Duration (e.g., 15 days)">
-            <input type="text" class="form-control" name="med_notes_${medIndex}" placeholder="Notes (e.g., After food)">
-            <button type="button" class="btn-remove-med" onclick="removeMedicationRow(${medIndex})">&times;</button>
-        `;
-
-        container.appendChild(medItem);
-        medIndex++;
-    }
-
-    window.removeMedicationRow = function(index) {
-        const row = document.getElementById(`med-row-${index}`);
-        if (row) { row.remove(); }
-    }
-
-    // --- Event Listeners and Initializers ---
-    // Now we attach the functions to page elements.
-
-    // Tab Switching
-    document.querySelectorAll(".tab-link").forEach(tab => {
-        tab.addEventListener("click", function() {
-            const targetId = this.getAttribute("data-tab");
-            document.querySelectorAll(".tab-link").forEach(t => t.classList.remove("active"));
-            document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-            this.classList.add("active");
-            document.getElementById(targetId).classList.add("active");
+        // Close modal when clicking outside content
+        document.querySelectorAll('.modal-backdrop').forEach(modal => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal(modal.id);
+                }
+            });
         });
-    });
 
-    // Clickable Actions Dropdown
-    const actionsBtn = document.getElementById('actions-btn');
-    const actionsDropdown = document.querySelector('.actions-dropdown');
-    actionsBtn.addEventListener('click', function(event) {
-        event.stopPropagation();
-        actionsDropdown.classList.toggle('show');
-    });
+        // --- 2. Dynamic Investigation Request Modal ---
+        const requestTypeSelect = document.getElementById('request_type_select');
+        if (requestTypeSelect) {
+            requestTypeSelect.addEventListener('change', function() {
+                const selectedType = this.value;
+                const radiologyFields = document.getElementById('radiology_fields');
+                const labFields = document.getElementById('lab_fields');
 
-    // Close dropdown/modals when clicking outside
-    window.addEventListener('click', function(event) {
-        if (actionsBtn && !actionsBtn.contains(event.target)) {
-            if (actionsDropdown.classList.contains('show')) {
+                radiologyFields.style.display = 'none';
+                labFields.style.display = 'none';
+                radiologyFields.innerHTML = '';
+                labFields.innerHTML = '';
+
+                if (selectedType === 'radiology') {
+                    radiologyFields.style.display = 'block';
+                    radiologyFields.innerHTML = `
+                        <div class="form-group" style="margin-top:15px;">
+                            <label>Scan Type</label>
+                            <select name="radiology_scan_type" class="form-control" required>
+                                <option value="" disabled selected>Select Scan Type</option>
+                                <option value="CT">CT</option>
+                                <option value="MR">MR</option>
+                                <option value="XRAY">XRAY</option>
+                                <option value="US">ULTRASOUND</option>
+                                <option value="PET">PET</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-top:15px;">
+                            <label>Body Part</label>
+                            <input type="text" name="radiology_body_part" class="form-control" placeholder="e.g., BRAIN, CHEST" required oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    `;
+                } else if (selectedType === 'lab') {
+                    labFields.style.display = 'block';
+                    let labHtml = '<div class="form-group" style="margin-top:15px;"><label>Select Tests</label>';
+
+                    if (window.labTestCategories) {
+                        Object.entries(window.labTestCategories).forEach(([category, subcategories]) => {
+                            labHtml += `<h4 style="margin-top: 15px; font-weight: bold; text-transform: capitalize;">${category}</h4>`;
+                            labHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">';
+                            Object.entries(subcategories).forEach(([subName, tests]) => {
+                                labHtml += `<div><h5>${subName}</h5>`;
+                                tests.forEach(test => {
+                                    labHtml += `
+                                        <label style="display: block; font-weight: normal;">
+                                            <input type="checkbox" name="lab_tests" value="${test}"> ${test}
+                                        </label>`;
+                                });
+                                labHtml += '</div>';
+                            });
+                            labHtml += '</div>';
+                        });
+                    }
+
+                    labHtml += '</div>';
+                    labFields.innerHTML = labHtml;
+                }
+            });
+        }
+
+        // --- 3. Tab Switching Logic ---
+        document.querySelectorAll(".tab-link").forEach(tab => {
+            tab.addEventListener("click", function() {
+                const targetId = this.getAttribute("data-tab");
+                
+                // Hide all tab panes first
+                document.querySelectorAll(".tab-pane").forEach(pane => {
+                    pane.classList.remove("active");
+                });
+                
+                // Show only the selected tab
+                document.getElementById(targetId).classList.add("active");
+                
+                // Update tab link states
+                document.querySelectorAll(".tab-link").forEach(t => t.classList.remove("active"));
+                this.classList.add("active");
+            });
+        });
+
+        // --- 4. Actions Dropdown Logic (Updated for click behavior) ---
+        const actionsBtn = document.getElementById('actions-btn');
+        const actionsDropdown = document.querySelector('.actions-dropdown');
+
+        // Toggle dropdown on button click
+        if (actionsBtn) {
+            actionsBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                // Close all other dropdowns first
+                document.querySelectorAll('.actions-dropdown.show').forEach(dropdown => {
+                    if (dropdown !== actionsDropdown) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+                // Toggle current dropdown
+                actionsDropdown.classList.toggle('show');
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (actionsDropdown && actionsDropdown.classList.contains('show') && 
+                !actionsBtn.contains(event.target) && 
+                !actionsDropdown.contains(event.target)) {
                 actionsDropdown.classList.remove('show');
             }
-        }
-        if (event.target.classList.contains('modal-backdrop')) {
-            closeModal(event.target.id);
-        }
-    });
+        });
 
-    // Initialize Visit History View
-    const visitListItems = document.querySelectorAll('.visit-list-item');
-    const visitDetailView = document.getElementById('visit-detail-view');
-    function displayVisitDetails(element) {
-        if (!element) return;
-        visitListItems.forEach(item => item.classList.remove('active'));
-        element.classList.add('active');
-        const visitType = element.dataset.visitType, visitDate = element.dataset.visitDate;
-        const diagnosis = element.dataset.diagnosis, complaints = element.dataset.complaints;
-        const visitId = element.dataset.visitId, modalId = element.dataset.modalId;
-        let actionsHtml = '';
-        if (visitId) {
-            actionsHtml = `
-            <div class="actions">
-                <button class="btn btn-primary" onclick="openFollowUpModal('${visitId}', \`${complaints}\`)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
-                <form action="/visit/${visitId}/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete this visit?');" style="display:inline;">
-                    <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash-alt"></i> Delete</button>
+        // --- 5. Prescription Modal Functions ---
+        let medIndex = 0;
+        window.addMedicationRow = function() {
+            const container = document.getElementById('medications-container');
+            if (!container) return;
+            const medItem = document.createElement('div');
+            medItem.className = 'medication-item';
+            medItem.id = `med-row-${medIndex}`;
+            medItem.innerHTML = `
+                <input list="medication-list" class="form-control" name="med_name_${medIndex}" placeholder="Medication Name" required>
+                <input type="text" class="form-control" name="med_dosage_${medIndex}" placeholder="Dosage (e.g., 50mg)">
+                <input type="text" class="form-control" name="med_frequency_${medIndex}" placeholder="Frequency (e.g., 1-0-1)">
+                <input type="text" class="form-control" name="med_duration_${medIndex}" placeholder="Duration (e.g., 15 days)">
+                <input type="text" class="form-control" name="med_notes_${medIndex}" placeholder="Notes (e.g., After food)">
+                <button type="button" class="btn-remove-med" onclick="removeMedicationRow(${medIndex})">&times;</button>
+            `;
+            container.appendChild(medItem);
+            medIndex++;
+        }
+
+        window.removeMedicationRow = function(index) {
+            const row = document.getElementById(`med-row-${index}`);
+            if (row) row.remove();
+        }
+        
+        // Initialize with one medication row
+        if(document.getElementById('medications-container')) {
+            addMedicationRow();
+        }
+
+        // --- 6. Visit History Logic ---
+        const visitListItems = document.querySelectorAll('.visit-list-item');
+        const visitDetailView = document.getElementById('visit-detail-view');
+
+        window.openFollowUpModal = function(visitId, complaints) {
+            const form = document.getElementById('followUpForm');
+            form.action = `/visit/${visitId}/edit`;
+            document.getElementById('followUpComplaints').value = complaints;
+            openModal('followUpModal');
+        }
+
+        function displayVisitDetails(element) {
+            if (!element || !visitDetailView) return;
+            visitListItems.forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            const { visitType, visitDate, diagnosis, complaints, visitId, modalId } = element.dataset;
+            let actionsHtml = '';
+            if (visitId) {
+                actionsHtml = `
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="openFollowUpModal('${visitId}', \`${complaints}\`)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                    <form action="/visit/${visitId}/delete" method="POST" onsubmit="return confirm('Are you sure?');" style="display:inline;">
+                        <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash-alt"></i> Delete</button>
                 </form>
-            </div>`;
-        } else {
-            actionsHtml = `<div class="actions"><button class="btn btn-primary" onclick="openModal('${modalId}')"><i class="fa-solid fa-pen-to-square"></i> Edit</button></div>`;
-        }
-        visitDetailView.innerHTML = `
-            <div class="visit-detail-header"><h3>${visitType}</h3>${actionsHtml}</div>
-            <div class="visit-detail-body">
-                <p><small><strong>Date:</strong> ${visitDate}</small></p>
-                <p><strong>Diagnosis:</strong> ${diagnosis}</p>
-                <p><strong>Complaints:</strong></p>
-                <div class="medical-notes">${complaints}</div>
-            </div>`;
-    }
-    if (visitListItems.length > 0) { displayVisitDetails(visitListItems[0]); }
-    else if (visitDetailView) { visitDetailView.innerHTML = '<p class="empty-state">No visit history.</p>'; }
-    visitListItems.forEach(item => { item.addEventListener('click', () => displayVisitDetails(item)); });
-    
-    // Add the first medication row to the prescription modal
-    addMedicationRow();
+                </div>`;
+            } else if (modalId) {
+                actionsHtml = `<div class="actions"><button class="btn btn-primary" onclick="openModal('${modalId}')"><i class="fa-solid fa-pen-to-square"></i> Edit</button></div>`;
+            }
 
-});
-</script>
+            visitDetailView.innerHTML = `
+                <div class="visit-detail-header"><h3>${visitType}</h3>${actionsHtml}</div>
+                <div class="visit-detail-body">
+                    <p><small><strong>Date:</strong> ${visitDate}</small></p>
+                    <p><strong>Diagnosis:</strong> ${diagnosis}</p>
+                    <p><strong>Complaints:</strong></p>
+                    <div class="medical-notes">${complaints}</div>
+                </div>`;
+        }
+        
+        if (visitListItems.length > 0) {
+            displayVisitDetails(visitListItems[0]);
+        } else if (visitDetailView) {
+            visitDetailView.innerHTML = '<p class="empty-state">No visit history recorded.</p>';
+        }
+
+        visitListItems.forEach(item => {
+            item.addEventListener('click', () => displayVisitDetails(item));
+        });
+
+    });
+    </script>
+</body>
+</html>
 {% endblock %}

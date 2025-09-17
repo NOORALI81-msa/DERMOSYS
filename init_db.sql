@@ -95,6 +95,7 @@ CREATE TABLE BedAssignment (
     admission_date TIMESTAMP NOT NULL,
     discharge_date TIMESTAMP,
     notes TEXT,
+    discharge_summary TEXT,
     FOREIGN KEY (patient_id) REFERENCES Patient(id),
     FOREIGN KEY (bed_id) REFERENCES Bed(id)
 );

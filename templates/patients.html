@@ -1,40 +1,272 @@
 {% extends "base.html" %}
-
 {% block content %}
+<style>
+    /* Using the same CSS variables and base styles from the first page */
+    :root {
+        --ehr-primary: #1976d2;
+        --ehr-primary-dark: #1565c0;
+        --ehr-primary-light: #e3f2fd;
+        --ehr-secondary: #455a64;
+        --ehr-success: #2e7d32;
+        --ehr-warning: #ed6c02;
+        --ehr-danger: #d32f2f;
+        --ehr-background: #f5f7fa;
+        --ehr-card: #ffffff;
+        --ehr-text: #263238;
+        --ehr-text-light: #78909c;
+        --ehr-border: #e0e0e0;
+        --ehr-hover: #f1f8ff;
+    }
 
+    body {
+        background-color: var(--ehr-background);
+        color: var(--ehr-text);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* --- Patient List Page Styles --- */
+    .ehr-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
     
+    .ehr-page-header h1 {
+        color: var(--ehr-primary);
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.75rem;
+    }
+    
+    .ehr-search-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        background-color: var(--ehr-card);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--ehr-border);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    
+    .ehr-search-form .ehr-form-group {
+        margin-bottom: 0;
+    }
+    
+    .ehr-search-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+    
+    .ehr-table-container {
+        background-color: var(--ehr-card);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        border: 1px solid var(--ehr-border);
+        margin-bottom: 2rem;
+    }
+    
+    .ehr-data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .ehr-data-table th {
+        background-color: #f5f7fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--ehr-secondary);
+        border-bottom: 2px solid var(--ehr-border);
+    }
+    
+    .ehr-data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--ehr-border);
+    }
+    
+    .ehr-data-table tr:hover {
+        background-color: var(--ehr-hover);
+    }
+    
+    .ehr-action-link {
+        color: var(--ehr-primary);
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .ehr-action-link:hover {
+        background-color: var(--ehr-primary-light);
+    }
+    
+    .ehr-status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .ehr-status-admitted {
+        background-color: #ffebee;
+        color: var(--ehr-danger);
+    }
+    
+    .ehr-status-discharged {
+        background-color: #e8f5e9;
+        color: var(--ehr-success);
+    }
+    
+    .ehr-pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .ehr-pagination-link {
+        padding: 0.5rem 0.9rem;
+        border: 1px solid var(--ehr-border);
+        border-radius: 4px;
+        color: var(--ehr-text);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .ehr-pagination-link:hover, .ehr-pagination-link.active {
+        background-color: var(--ehr-primary);
+        color: white;
+        border-color: var(--ehr-primary);
+    }
+    
+    /* --- Form Styles --- */
+    .ehr-form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .ehr-form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--ehr-secondary);
+    }
+    
+    .ehr-form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--ehr-border);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+    }
+    
+    .ehr-form-control:focus {
+        outline: none;
+        border-color: var(--ehr-primary);
+        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+    }
+    
+    .ehr-button {
+        background: var(--ehr-primary);
+        color: white;
+        padding: 0.6rem 1.25rem;
+        font-size: 0.9rem;
+        border: none;
+        cursor: pointer;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .ehr-button:hover {
+        background: var(--ehr-primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(25, 118, 210, 0.2);
+    }
+    
+    .ehr-button-secondary {
+        background: var(--ehr-secondary);
+    }
+    
+    .ehr-button-secondary:hover {
+        background: #37474f;
+    }
+    
+    @media (max-width: 768px) {
+        .ehr-search-form {
+            grid-template-columns: 1fr;
+        }
+        
+        .ehr-data-table {
+            display: block;
+            overflow-x: auto;
+        }
+    }
+</style>
 
-<div class="page-header">
-    <h1>Patient Records</h1>
-    <a href="{{ url_for('register_patient') }}" class="btn"><i class="fa-solid fa-plus"></i> Register New Patient</a>
+<div class="ehr-page-header">
+    <h1>Patient Management</h1>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('register_patient') }}" class="ehr-button"><i class="fa-solid fa-plus"></i> Add New Patient</a>
+        {% if session.get('role_id') == 1 %}
+        <a href="{{ url_for('download_patient_data', **request.args) }}" class="ehr-button ehr-button-secondary"><i class="fa-solid fa-download"></i> Download CSV</a>
+        {% endif %}
+    </div>
 </div>
 
-<!-- Search and Export Form -->
-<form method="GET" action="{{ url_for('list_patients') }}" class="search-export-form">
-    <div class="form-group"><label for="patient_id">Patient ID/Code</label><input type="text" name="patient_id" id="patient_id" value="{{ search_params.patient_id or '' }}"></div>
-    <div class="form-group"><label for="mobile">Mobile Number</label><input type="text" name="mobile" id="mobile" value="{{ search_params.mobile or '' }}"></div>
-    <div class="form-group"><label for="age_from">Age From</label><input type="number" name="age_from" id="age_from" value="{{ search_params.age_from or '' }}"></div>
-    <div class="form-group"><label for="age_to">Age To</label><input type="number" name="age_to" id="age_to" value="{{ search_params.age_to or '' }}"></div>
-    <div class="form-group"><label for="date_from">Date From</label><input type="date" name="date_from" id="date_from" value="{{ search_params.date_from or '' }}"></div>
-    <div class="form-group"><label for="date_to">Date To</label><input type="date" name="date_to" id="date_to" value="{{ search_params.date_to or '' }}"></div>
-    <div style="display: flex; gap: 10px;">
-        <button type="submit" class="btn">Search</button>
-        {% if session.get('role_id') == 1 %}
-    <a href="{{ url_for('download_patient_data', **search_params) }}" class="btn" style="background-color: #27ae60;">Download CSV</a>
-        {% endif %}
+<form method="GET" action="{{ url_for('list_patients') }}" class="ehr-search-form">
+    <div class="ehr-form-group">
+        <label for="search_name">Name</label>
+        <input type="text" id="search_name" name="name" value="{{ request.args.get('name', '') }}" class="ehr-form-control">
+    </div>
+    <div class="ehr-form-group">
+        <label for="search_patient_code">Patient Code</label>
+        <input type="text" id="search_patient_code" name="patient_code" value="{{ request.args.get('patient_code', '') }}" class="ehr-form-control">
+    </div>
+    <div class="ehr-form-group">
+        <label for="search_mobile">Mobile Number</label>
+        <input type="text" id="search_mobile" name="mobile_number" value="{{ request.args.get('mobile_number', '') }}" class="ehr-form-control">
+    </div>
+    <div class="ehr-form-group">
+        <label for="search_status">Status</label>
+        <select id="search_status" name="status" class="ehr-form-control">
+            <option value="">All Patients</option>
+            <option value="admitted" {% if request.args.get('status') == 'admitted' %}selected{% endif %}>Admitted</option>
+            <option value="discharged" {% if request.args.get('status') == 'discharged' %}selected{% endif %}>Discharged</option>
+        </select>
+    </div>
+    <div class="ehr-search-actions">
+        <button type="submit" class="ehr-button"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+        <a href="{{ url_for('list_patients') }}" class="ehr-button ehr-button-secondary"><i class="fa-solid fa-rotate-right"></i> Reset</a>
     </div>
 </form>
 
-<div class="patients-table-container">
-    <table class="patients-table">
+<div class="ehr-table-container">
+    <table class="ehr-data-table">
         <thead>
             <tr>
                 <th>Patient Code</th>
                 <th>Name</th>
                 <th>Age</th>
                 <th>Gender</th>
-                <th>Registration Date</th>
                 <th>Diagnosis</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -43,20 +275,43 @@
             <tr>
                 <td>{{ patient.patient_code }}</td>
                 <td>{{ patient.name }}</td>
-                <td>{{ patient.age }}</td>
+                <td>{{ patient.age }} years</td>
                 <td>{{ patient.gender }}</td>
-                <td>{{ patient.date_of_registration }}</td>
                 <td>{{ patient.diagnosis or 'N/A' }}</td>
                 <td>
-                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="action-link">View Details</a>
+                    {% if patient.is_admitted %}
+                    <span class="ehr-status-badge ehr-status-admitted">Admitted</span>
+                    {% else %}
+                    <span class="ehr-status-badge ehr-status-discharged">Discharged</span>
+                    {% endif %}
                 </td>
+                <td>
+                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="ehr-action-link"><i class="fa-solid fa-eye"></i> View</a>
+                    <!-- <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="ehr-action-link"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
+                </td> -->
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" style="text-align: center; padding: 20px;">No patients found for the selected criteria.</td>
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--ehr-text-light);">No patients found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+{% if total_pages > 1 %}
+<div class="ehr-pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('patient_list', page=page-1, **request.args) }}" class="ehr-pagination-link">&laquo; Prev</a>
+    {% endif %}
+    
+    {% for p in range(1, total_pages + 1) %}
+    <a href="{{ url_for('patient_list', page=p, **request.args) }}" class="ehr-pagination-link {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+    
+    {% if page < total_pages %}
+    <a href="{{ url_for('patient_list', page=page+1, **request.args) }}" class="ehr-pagination-link">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}

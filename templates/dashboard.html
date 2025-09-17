@@ -2,213 +2,171 @@
 
 {% block content %}
 <style>
-    /* General Styles & Variables */
+    /* --- Main Dashboard Styles (from original dashboard.html) --- */
     :root {
-        --primary-color: #090c0e;
-        --danger-color: #e74c3c;
-        --success-color: #2ecc71;
-        --warning-color: #f39c12;
-        --card-bg: #ffffff;
-        --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        --border-radius: 12px;
+       --primary-color: #0f172a;
+        --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+        --highlight-color: #3b82f6;
+        --highlight-gradient: linear-gradient(135deg, #3b82f6, #2563eb);
+        --background-color: #f8fafc;
+        --sidebar-bg: #1e293b;
+        --sidebar-width: 280px;
+        --danger-color: #ef4444;
+        --success-color: #10b981;
+        --info-color: #8b5cf6;
+        --warning-color: #f59e0b;
+        --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    /* KPI Cards Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 20px;
-    }
-
-    .stat-card {
-        background-color: var(--card-bg);
-        border-radius: var(--border-radius);
-        box-shadow: var(--card-shadow);
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        text-decoration: none;
-        color: inherit;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-    }
-
-    .stat-card .icon {
-        font-size: 2em;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        flex-shrink: 0;
-    }
-
-    .stat-card .info h3 {
-        margin: 0;
-        font-size: 2em;
-        color: #333;
-    }
-
-    .stat-card .info p {
-        margin: 0;
-        color: #777;
-    }
-
-    .icon.patients { background-color: var(--primary-color); }
-    .icon.beds { background-color: var(--success-color); }
-    .icon.reports { background-color: var(--warning-color); }
-    .icon.missed { background-color: var(--danger-color); }
-
-    /* Charts Grid */
-    .charts-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 20px;
-        margin-top: 30px;
-    }
-
-    .chart-container-large {
-        grid-column: 1 / -1;
-    }
-
-    @media (max-width: 992px) {
-        .charts-grid { grid-template-columns: 1fr; }
-    }
-
-    /* User Management Section */
-    .user-management-section {
-        background: var(--card-bg);
-        padding: 25px;
-        border-radius: var(--border-radius);
-        box-shadow: var(--card-shadow);
-        margin-top: 30px;
-    }
-
-    .user-list {
-        list-style: none;
-        padding: 0;
-        margin-top: 20px;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .user-list li {
-        display: flex;
-        align-items: center;
-        padding: 15px 10px;
-        border-bottom: 1px solid #f0f0f0;
-        transition: background-color 0.2s;
-    }
-     .user-list li:hover {
-        background-color: #f9f9f9;
-    }
+    .page-header { margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+    .page-header h1 { margin: 0; font-size: 2em; color: var(--primary-color); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background-color: #fff; border-radius: 12px; box-shadow: var(--card-shadow); padding: 20px; display: flex; align-items: center; gap: 20px; text-decoration: none; color: inherit; transition: var(--transition); border-left: 4px solid; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); }
+    .stat-card .icon { font-size: 2em; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+    .stat-card .info h3 { margin: 0; font-size: 2em; color: #333; }
+    .stat-card .info p { margin: 0; color: #777; }
+    .icon.patients { background-color: var(--highlight-color); border-left-color: var(--highlight-color); }
+    .icon.beds { background-color: var(--success-color); border-left-color: var(--success-color); }
+    .icon.reports { background-color: var(--warning-color); border-left-color: var(--warning-color); }
+    .icon.missed { background-color: var(--danger-color); border-left-color: var(--danger-color); }
+    .user-management-section { background: #fff; padding: 25px; border-radius: 12px; box-shadow: var(--card-shadow); margin-top: 30px; }
+    .user-management-section h2 { margin-top: 0; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+    .user-list { list-style: none; padding: 0; margin-top: 20px; }
+    .user-list li { display: flex; align-items: center; padding: 15px 10px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; }
+    .user-list li:hover { background-color: #f9f9f9; }
     .user-list li:last-child { border-bottom: none; }
-
-    .user-info {
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .user-info i {
-        color: var(--primary-color);
-        font-size: 1.4em;
-    }
-
-    .user-name-link {
-        color: #333;
-        text-decoration: none;
-        font-weight: 500;
-        cursor: pointer;
-    }
-
-    .user-name-link:hover {
-        color: var(--primary-color);
-        text-decoration: underline;
-    }
-
-    .user-role {
-        font-size: 0.85em;
-        color: #555;
-        background-color: #e9ecef;
-        padding: 4px 10px;
-        border-radius: 15px;
-    }
-
-    .user-time {
-        margin-left: auto;
-        color: #555;
-        font-size: 0.9em;
-    }
-    
-    /* Modal styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.5);
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        background-color: #fefefe;
-        padding: 25px;
-        border-radius: var(--border-radius);
-        width: 90%;
-        max-width: 750px;
-        position: relative;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-
-    .close-button {
-        color: #aaa;
-        position: absolute;
-        top: 15px;
-        right: 25px;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: color 0.2s;
-    }
+    .user-info { flex-grow: 1; display: flex; align-items: center; gap: 15px; }
+    .user-info i { color: var(--primary-color); font-size: 1.4em; }
+    .user-name-link { color: #333; text-decoration: none; font-weight: 500; cursor: pointer; }
+    .user-name-link:hover { color: var(--highlight-color); text-decoration: underline; }
+    .user-role { font-size: 0.85em; color: #555; background-color: #e9ecef; padding: 4px 10px; border-radius: 15px; }
+    .user-time { margin-left: auto; color: #555; font-size: 0.9em; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .modal-content { background-color: #fefefe; padding: 25px; border-radius: 12px; width: 90%; max-width: 850px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .close-button { color: #aaa; position: absolute; top: 15px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
     .close-button:hover { color: #333; }
+    #modal-filters { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+    #modal-filters input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9em; }
+    #search-activity { flex-grow: 1; }
+    #modal-filters label { font-weight: 500; }
+    #modalBody { max-height: 60vh; overflow-y: auto; }
+    .activity-category details { border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px; }
+    .activity-category summary { padding: 15px; font-size: 1.2em; font-weight: 600; cursor: pointer; background-color: #f9f9f9; border-radius: 8px 8px 0 0; list-style: none; }
+    .activity-category summary::-webkit-details-marker { display: none; }
+    .activity-category summary::before { content: '▶'; margin-right: 10px; font-size: 0.8em; transition: transform 0.2s; }
+    .activity-category details[open] summary::before { transform: rotate(90deg); }
+    .activity-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .activity-table th, .activity-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+    .activity-table th { background-color: #f2f2f2; font-size: 0.9em; text-transform: uppercase; }
+    .activity-table a { color: var(--highlight-color); text-decoration: none; font-weight: 500; }
+    .activity-table a:hover { text-decoration: underline; }
+    @media (max-width: 600px) { #modal-filters { flex-direction: column; align-items: stretch; } }
 
-    #modalBody {
-        max-height: 65vh;
-        overflow-y: auto;
-        margin-top: 20px;
-    }
 
-    .activity-item {
-        border-bottom: 1px solid #eee;
-        padding: 12px 5px;
+    /* --- STYLES INTEGRATED FROM patients.html --- */
+    :root {
+        --ehr-primary: #1976d2;
+        --ehr-primary-dark: #1565c0;
+        --ehr-primary-light: #e3f2fd;
+        --ehr-secondary: #455a64;
+        --ehr-success: #2e7d32;
+        --ehr-warning: #ed6c02;
+        --ehr-danger: #d32f2f;
+        --ehr-background: #f5f7fa;
+        --ehr-card: #ffffff;
+        --ehr-text: #263238;
+        --ehr-text-light: #78909c;
+        --ehr-border: #e0e0e0;
+        --ehr-hover: #f1f8ff;
     }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-type { font-weight: bold; color: var(--primary-color); }
-    .activity-date { font-size: 0.85em; color: #777; float: right; }
-    .activity-item a { color: #333; text-decoration: none; display: block; margin-top: 4px;}
-    .activity-item a:hover { text-decoration: underline; }
+    .ehr-page-header { display: flex; justify-content: space-between; align-items: center; margin: 30px 0 1.5rem 0; flex-wrap: wrap; gap: 1rem; }
+    .ehr-page-header h1 { color: var(--ehr-primary); margin: 0; font-weight: 600; font-size: 1.75rem; }
+    .ehr-search-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; background-color: var(--ehr-card); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--ehr-border); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .ehr-search-form .ehr-form-group { margin-bottom: 0; }
+    .ehr-search-actions { grid-column: 1 / -1; display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 0.5rem; }
+    .ehr-table-container { background-color: var(--ehr-card); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--ehr-border); margin-bottom: 2rem; }
+    .ehr-data-table { width: 100%; border-collapse: collapse; }
+    .ehr-data-table th { background-color: #f5f7fa; padding: 1rem; text-align: left; font-weight: 600; color: var(--ehr-secondary); border-bottom: 2px solid var(--ehr-border); }
+    .ehr-data-table td { padding: 1rem; border-bottom: 1px solid var(--ehr-border); }
+    .ehr-data-table tr:hover { background-color: var(--ehr-hover); }
+    .ehr-action-link { color: var(--ehr-primary); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 4px; transition: all 0.2s; }
+    .ehr-action-link:hover { background-color: var(--ehr-primary-light); }
+    .ehr-status-badge { padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .ehr-status-admitted { background-color: #ffebee; color: var(--ehr-danger); }
+    .ehr-status-discharged { background-color: #e8f5e9; color: var(--ehr-success); }
+    .ehr-pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
+    .ehr-pagination-link { padding: 0.5rem 0.9rem; border: 1px solid var(--ehr-border); border-radius: 4px; color: var(--ehr-text); text-decoration: none; transition: all 0.2s; }
+    .ehr-pagination-link:hover, .ehr-pagination-link.active { background-color: var(--ehr-primary); color: white; border-color: var(--ehr-primary); }
+    .ehr-form-group { margin-bottom: 1.25rem; }
+    .ehr-form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--ehr-secondary); }
+    .ehr-form-control { width: 100%; padding: 0.75rem; border: 1px solid var(--ehr-border); border-radius: 6px; font-size: 0.95rem; transition: border-color 0.2s; }
+    .ehr-form-control:focus { outline: none; border-color: var(--ehr-primary); box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15); }
+    .ehr-button { background: var(--ehr-primary); color: white; padding: 0.6rem 1.25rem; font-size: 0.9rem; border: none; cursor: pointer; border-radius: 6px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+    .ehr-button:hover { background: var(--ehr-primary-dark); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(25, 118, 210, 0.2); }
+    .ehr-button-secondary { background: var(--ehr-secondary); }
+    .ehr-button-secondary:hover { background: #37474f; }
+    @media (max-width: 768px) {
+        .ehr-search-form { grid-template-columns: 1fr; }
+        .ehr-data-table { display: block; overflow-x: auto; }
+    }
+    /* --- ADD THESE RESPONSIVE STYLES AT THE END OF YOUR <style> BLOCK --- */
+    @media (max-width: 768px) {
+        /* Adjust page header for smaller screens */
+        .page-header h1 {
+            font-size: 1.75em;
+        }
+
+        /* Make top stat cards more compact on mobile */
+        .stats-grid {
+            grid-template-columns: 1fr; /* Stack cards vertically */
+            gap: 15px;
+        }
+        
+        .stat-card {
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .stat-card .icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.7em;
+        }
+
+        .stat-card .info h3 {
+            font-size: 1.7em;
+        }
+
+        /* Stack the user management list vertically to prevent overflow */
+        .user-list li {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .user-time {
+            margin-left: 0; /* Remove the auto margin */
+            padding-left: 30px; /* Indent it slightly under the user info */
+        }
+
+        .user-list li form {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .user-list li form button {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+    }
 </style>
 
 <div class="page-header">
-    <h1>Clinical Dashboard</h1>
+    <h1><i class="fas fa-tachometer-alt"></i> Clinical Dashboard</h1>
 </div>
 
-<!-- KPIs -->
 <div class="stats-grid">
     <a href="{{ url_for('list_patients') }}" class="stat-card">
         <div class="icon patients"><i class="fa-solid fa-hospital-user"></i></div>
@@ -240,23 +198,95 @@
     </a>
 </div>
 
-<!-- Charts -->
-<div class="charts-grid">
-    <div class="chart-container">
-        <h2>Disease Frequency</h2>
-        <canvas id="diseaseChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <h2>Gender Distribution</h2>
-        <canvas id="genderChart"></canvas>
-    </div>
-    <div class="chart-container chart-container-large">
-        <h2>Patient Registrations (Last 7 Days)</h2>
-        <canvas id="registrationChart"></canvas>
-    </div>
+<div class="ehr-page-header">
+    <h1>Patient Management</h1>
+    <a href="{{ url_for('register_patient') }}" class="ehr-button"><i class="fa-solid fa-plus"></i> Add New Patient</a>
 </div>
 
-<!-- User Management -->
+<form method="GET" action="{{ url_for('list_patients') }}" class="ehr-search-form">
+    <div class="ehr-form-group">
+        <label for="search_name">Name</label>
+        <input type="text" id="search_name" name="name" value="{{ request.args.get('name', '') }}" class="ehr-form-control">
+    </div>
+    <div class="ehr-form-group">
+        <label for="search_patient_code">Patient Code</label>
+        <input type="text" id="search_patient_code" name="patient_code" value="{{ request.args.get('patient_code', '') }}" class="ehr-form-control">
+    </div>
+    <div class="ehr-form-group">
+        <label for="search_mobile">Mobile Number</label>
+        <input type="text" id="search_mobile" name="mobile_number" value="{{ request.args.get('mobile_number', '') }}" class="ehr-form-control">
+    </div>
+    <div class="ehr-form-group">
+        <label for="search_status">Status</label>
+        <select id="search_status" name="status" class="ehr-form-control">
+            <option value="">All Patients</option>
+            <option value="admitted" {% if request.args.get('status') == 'admitted' %}selected{% endif %}>Admitted</option>
+            <option value="discharged" {% if request.args.get('status') == 'discharged' %}selected{% endif %}>Discharged</option>
+        </select>
+    </div>
+    <div class="ehr-search-actions">
+        <button type="submit" class="ehr-button"><i class="fa-solid fa-magnifying-glass"></i> Apply Filter</button>
+        <a href="{{ url_for('list_patients') }}" class="ehr-button ehr-button-secondary"><i class="fa-solid fa-rotate-right"></i> Reset</a>
+    </div>
+</form>
+
+<div class="ehr-table-container">
+    <table class="ehr-data-table">
+        <thead>
+            <tr>
+                <th>Patient Code</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Diagnosis</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for patient in patients %}
+            <tr>
+                <td>{{ patient.patient_code }}</td>
+                <td>{{ patient.name }}</td>
+                <td>{{ patient.age }} years</td>
+                <td>{{ patient.gender }}</td>
+                <td>{{ patient.diagnosis or 'N/A' }}</td>
+                <td>
+                    {% if patient.is_admitted %}
+                    <span class="ehr-status-badge ehr-status-admitted">Admitted</span>
+                    {% else %}
+                    <span class="ehr-status-badge ehr-status-discharged">Discharged</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="ehr-action-link"><i class="fa-solid fa-eye"></i> View</a>
+                    <!-- <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="ehr-action-link"><i class="fa-solid fa-pen-to-square"></i> Edit</a> -->
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--ehr-text-light);">No patients found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="ehr-pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('list_patients', page=page-1, **request.args) }}" class="ehr-pagination-link">&laquo; Prev</a>
+    {% endif %}
+    
+    {% for p in range(1, total_pages + 1) %}
+    <a href="{{ url_for('list_patients', page=p, **request.args) }}" class="ehr-pagination-link {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+    
+    {% if page < total_pages %}
+    <a href="{{ url_for('list_patients', page=page+1, **request.args) }}" class="ehr-pagination-link">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
 {% if session.get('role_id') == 1 %}
 <div class="user-management-section">
     <h2><i class="fa-solid fa-users-cog"></i> User Management</h2>
@@ -264,7 +294,7 @@
         {% for user in all_users %}
         <li>
             <div class="user-info">
-                <i class="fas fa-user-circle" style="color: {{ '#c0392b' if not user.is_active else '#3498db' }};"></i>
+                <i class="fas fa-user-circle" style="color: {% if not user.is_active %}#c0392b{% else %}#3498db{% endif %};"></i>
                 <a class="user-name-link" data-user-id="{{ user.id }}" data-username="{{ user.username }}">{{ user.username }}</a>
                 <span class="user-role">{{ user.role_name | capitalize }}</span>
             </div>
@@ -286,61 +316,101 @@
 </div>
 {% endif %}
 
-<!-- User Activity Modal -->
 <div id="activityModal" class="modal">
     <div class="modal-content">
         <span class="close-button">&times;</span>
         <h2 id="modalTitle">User Activity</h2>
+        
+        <div id="modal-filters">
+            <input type="text" id="search-activity" placeholder="Search by patient name...">
+            <label for="start-date">From:</label>
+            <input type="date" id="start-date">
+            <label for="end-date">To:</label>
+            <input type="date" id="end-date">
+        </div>
+
         <div id="modalBody"><p>Loading activity...</p></div>
     </div>
 </div>
 
-<script type="application/json" id="diseaseData">{{ disease_data | tojson }}</script>
-<script type="application/json" id="genderData">{{ gender_data | tojson }}</script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // Chart Logic
-    const createChart = (ctx, type, data, options) => new Chart(ctx, { type, data, options });
-
-    const diseaseData = JSON.parse(document.getElementById('diseaseData').textContent);
-    if (Object.keys(diseaseData).length > 0) {
-        createChart(document.getElementById('diseaseChart').getContext('2d'), 'bar', {
-            labels: Object.keys(diseaseData),
-            datasets: [{ label: 'Cases', data: Object.values(diseaseData), backgroundColor: 'rgba(52, 152, 219, 0.7)' }]
-        }, { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } });
-    }
-
-    const genderData = JSON.parse(document.getElementById('genderData').textContent);
-    if (Object.keys(genderData).length > 0) {
-        createChart(document.getElementById('genderChart').getContext('2d'), 'doughnut', {
-            labels: Object.keys(genderData),
-            datasets: [{ data: Object.values(genderData), backgroundColor: ['#3498db', '#e74c3c', '#9b59b6'] }]
-        });
-    }
-
-    // Fetch and create Registration Chart
-    fetch('/api/weekly_registrations')
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.labels && data.values) {
-                 createChart(document.getElementById('registrationChart').getContext('2d'), 'line', {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'New Patients', data: data.values,
-                        borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                        fill: true, tension: 0.3
-                    }]
-                }, { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } });
-            }
-        }).catch(error => console.error('Error fetching registration data:', error));
-
-    // Modal Logic
+    // --- Activity Modal Logic (Unchanged) ---
     const modal = document.getElementById('activityModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     const closeBtn = document.querySelector('.close-button');
+    const searchInput = document.getElementById('search-activity');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    
+    let fullActivityData = [];
+
+    function renderActivities() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+        const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+
+        if (endDate) endDate.setHours(23, 59, 59, 999);
+
+        const filteredData = fullActivityData.filter(act => {
+            const activityDate = new Date(act.activity_date);
+            const nameMatch = !searchTerm || (act.name && act.name.toLowerCase().includes(searchTerm));
+            const startDateMatch = !startDate || activityDate >= startDate;
+            const endDateMatch = !endDate || activityDate <= endDate;
+            return nameMatch && startDateMatch && endDateMatch;
+        });
+
+        if (filteredData.length === 0) {
+            modalBody.innerHTML = '<p>No matching activities found.</p>';
+            return;
+        }
+        
+        const grouped = filteredData.reduce((acc, act) => {
+            const type = act.type || 'Other';
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(act);
+            return acc;
+        }, {});
+
+        let content = Object.keys(grouped).map(category => {
+            const activities = grouped[category];
+            const tableRows = activities.map(act => {
+                const activityDate = new Date(act.activity_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+                return `
+                    <tr>
+                        <td><a href="/patient/${act.patient_id}">${act.name || 'N/A'}</a></td>
+                        <td>${activityDate}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="activity-category">
+                    <details open>
+                        <summary>${category} (${activities.length})</summary>
+                        <table class="activity-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Date & Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </details>
+                </div>
+            `;
+        }).join('');
+        
+        modalBody.innerHTML = content;
+    }
+
+    searchInput.addEventListener('input', renderActivities);
+    startDateInput.addEventListener('change', renderActivities);
+    endDateInput.addEventListener('change', renderActivities);
 
     document.querySelectorAll('.user-name-link').forEach(link => {
         link.addEventListener('click', async (event) => {
@@ -350,39 +420,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
             modalTitle.textContent = `Activity Log: ${username}`;
             modalBody.innerHTML = '<p>Loading activity...</p>';
+            searchInput.value = '';
+            startDateInput.value = '';
+            endDateInput.value = '';
             modal.style.display = 'flex';
 
             try {
                 const response = await fetch(`/api/user_activity/${userId}`);
-                const activities = await response.json();
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
-                if (activities.length === 0) {
-                    modalBody.innerHTML = '<p>No recent activity recorded for this user.</p>';
-                    return;
-                }
-                
-                let content = activities.map(act => {
-                    const activityDate = new Date(act.date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-                    return `
-                        <div class="activity-item">
-                            <span class="activity-date">${activityDate}</span>
-                            <div class="activity-type">${act.type}</div>
-                            <a href="${act.link}">${act.description}</a>
-                        </div>
-                    `;
-                }).join('');
-                modalBody.innerHTML = content;
+                fullActivityData = await response.json();
+                renderActivities();
 
             } catch (error) {
                 console.error('Failed to fetch user activity:', error);
-                modalBody.innerHTML = '<p>Error loading activity data. Please try again.</p>';
+                modalBody.innerHTML = `<p>Error loading activity data: ${error.message}</p>`;
             }
         });
     });
 
-    closeBtn.onclick = () => { modal.style.display = "none"; }
+    if(closeBtn) {
+        closeBtn.onclick = () => { modal.style.display = "none"; }
+    }
     window.onclick = (event) => { if (event.target == modal) modal.style.display = "none"; }
+
+    // --- User Status Toggle Confirmation (Unchanged) ---
+    document.querySelectorAll('form[action*="toggle_user_status"]').forEach(form => {
+        form.addEventListener('submit', (e) => {
+            const button = form.querySelector('button[type="submit"]');
+            const username = form.closest('li').querySelector('.user-name-link').textContent;
+            const action = button.textContent.trim();
+            if (!confirm(`Are you sure you want to ${action.toLowerCase()} user ${username}?`)) {
+                e.preventDefault();
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
-

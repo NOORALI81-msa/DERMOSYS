@@ -3,675 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dermatology Department Portfolio</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <title>DermSys - Advanced Dermatology Clinic Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
-
         :root {
-            --primary-color: #3b82f6;
-            --secondary-color: #654485;
-            --dark-color: #111827;
-            --light-color: #f9fafb;
-            --text-color: #374151;
-        }
-
-        html {
-            scroll-behavior: smooth;
+            --primary-color: #0f172a;
+            --highlight-color: #3b82f6;
+            --background-color: #f8fafc;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.07);
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            color: var(--text-color);
-            background-color: var(--light-color);
-            overflow-x: hidden;
-        }
-
-        /* --- Navigation Bar --- */
-        .navbar {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 5%;
-            background: rgb(255, 255, 255);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2em;
-            font-weight: 700;
-            color: var(--secondary-color);
-        }
-
-        .nav-links a {
-            margin: 0 15px;
-            text-decoration: none;
-            color: var(--dark-color);
-            font-weight: 700;
-            transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: var(--primary-color);
-        }
-
-        .cta-button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 150px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-        }
-        
-        .cta-button:hover {
-            background-color: #2563eb;
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
-        }
-
-        /* --- Section Styling --- */
-        .section {
-            padding: 100px 5%;
-            min-height: 90vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-        }
-        
-        .section.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* --- Hero Section --- */
-        #hero {
-            min-height: 100vh;
-            background: url('https://images.unsplash.com/photo-1580281657527-47f249e8f4df?auto=format&fit=crop&w=1770&q=80') no-repeat center center/cover;
-            color: white;
-            text-align: center;
-        }
-        
-        .hero-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-        }
-        
-        .hero-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-content h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
-
-        .hero-content p {
-            font-size: 1.5em;
-            max-width: 700px;
-            margin: 0 auto 30px auto;
-        }
-
-        /* --- About Section --- */
-        .about-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-            max-width: 1200px;
-        }
-
-        .about-image {
-            width: 100%;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .section-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.5em;
-            color: var(--dark-color);
-            margin-bottom: 50px;
-            text-align: center;
-        }
-
-        /* --- Services Section --- */
-        #services {
-            background-color: #eef2ff;
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-        }
-
-        .service-card {
-            background-color: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .service-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 25px rgba(0,0,0,0.1);
-        }
-        
-        .service-card .icon {
-            font-size: 2.5em;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-
-        .service-card h3 {
-            margin: 0 0 10px 0;
-        }
-
-        /* --- Technology Section --- */
-        #technology {
-            background: url('https://images.unsplash.com/photo-1554495522-432d354e3abc?auto=format&fit=crop&w=1770&q=80') no-repeat center center/cover fixed;
-            color: white;
-            position: relative;
-        }
-        
-        .technology-content {
-             position: relative; z-index: 2; background: rgba(17, 24, 39, 0.7); padding: 50px; border-radius: 15px; max-width: 800px; text-align: center;
-        }
-
-        /* --- Contact Section --- */
-        #contact {
-            background-color: var(--dark-color);
-            color: var(--light-color);
-        }
-        
-        .contact-form {
-            max-width: 600px;
-            width: 100%;
-        }
-
-        .contact-form input, .contact-form textarea {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: none;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        .contact-form button {
-            width: 100%;
-            padding: 15px;
-            border-radius: 8px;
-            border: none;
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .contact-form button:hover {
-             background-color: #2563eb;
-        }
-
-        /* --- Footer --- */
-        .footer {
-            text-align: center;
-            padding: 20px;
-            background-color: #1f2937;
-            color: #d1d5db;
-        }
-
-        /* --- Responsive Design --- */
-        @media (max-width: 768px) {
-            .nav-links { display: none; }
-            .hero-content h1 { font-size: 2.5em; }
-            .about-grid { grid-template-columns: 1fr; }
-            .about-image { order: -1; margin-bottom: 30px; }
-        }
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            color: #333;
+            background-color: var(--background-color);
+            color: #334155;
             line-height: 1.6;
         }
 
-        /* --- Sticky Access Button --- */
-        .access-portal-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            background-color: #2c3e50;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        .access-portal-btn:hover {
-            background-color: #3498db;
-            transform: translateY(-2px);
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
 
-        /* --- Section Styling --- */
-        .hero-section, .content-section, .cta-section {
-            padding: 100px 0;
-            text-align: center;
+        /* --- Navigation --- */
+        .main-nav {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
         }
-        .content-container {
-            width: 90%;
-            max-width: 1100px;
+        
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .nav-links a {
+            color: #475569;
+            text-decoration: none;
+            margin-left: 25px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: darkgray;
+        }
+
+        .cta-button {
+            background-color: var(--highlight-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* --- Hero Section --- */
+        .hero-section {
+            background: 
+                linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.85)),
+                url('https://tse1.mm.bing.net/th/id/OIP.6p5o9hG4fLTffJtJAxjaCwHaFC?r=0&w=725&h=493&rs=1&pid=ImgDetMain&o=7&rm=3');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            
+            color: white;
+            padding: 160px 0 120px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .hero-content p {
+            font-size: 1.25em;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            opacity: 0.9;
+        }
+        
+        /* --- Features Section --- */
+        .features-section {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .section-title h2 {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .section-title p {
+            font-size: 1.1em;
+            color: #64748b;
+            max-width: 600px;
             margin: 0 auto;
         }
 
-        /* --- Hero Section --- */
-        .hero-section {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1580618672591-eb180b1a973f?q=80&w=2070&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed; /* Parallax effect */
-            color: white;
-        }
-        .main-title {
-            font-size: 4rem;
-            font-weight: 700;
-            margin: 0;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-        }
-        .subtitle {
-            font-size: 1.5rem;
-            font-weight: 300;
-            margin-top: 10px;
-        }
-
-        /* --- About Section --- */
-        .about-section {
-            background-color: #ffffff;
-        }
-        .about-section .content-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-            text-align: left;
-        }
-        .about-section img {
-            width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            align-self: center;
-        }
-
-        /* --- Features Section --- */
-        .features-section {
-            background-color: #f4f7f6;
-        }
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
-            margin-top: 40px;
-        }
-        .feature-card {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 25px rgba(0,0,0,0.1);
-        }
-        .feature-card i {
-            font-size: 2.5rem;
-            color: #3498db;
-            margin-bottom: 15px;
-        }
-        .feature-card h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 1.5rem;
         }
 
-        /* --- CTA Section --- */
-        .cta-section {
-            background-image: linear-gradient(rgba(44, 62, 80, 0.8), rgba(44, 62, 80, 0.8)), url('https://images.unsplash.com/photo-1556760544-74068221c58c?q=80&w=2070&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed; /* Parallax effect */
-            color: white;
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            transition: all 0.3s;
         }
-        .cta-button-main {
-            background-color: #3498db;
-            color: white;
-            padding: 15px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 1.1em;
-            transition: background-color 0.3s;
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card .icon {
+            font-size: 2.5em;
+            color: var(--highlight-color);
+            margin-bottom: 20px;
             display: inline-block;
-            margin-top: 20px;
+            background-color: #e0f2fe;
+            width: 70px;
+            height: 70px;
+            line-height: 70px;
+            border-radius: 50%;
         }
-        .cta-button-main:hover {
-            background-color: #2980b9;
+        
+        .feature-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        /* --- Guidelines Section --- */
+        .guidelines-section {
+            padding: 80px 0;
+            background-color: #f1f5f9;
+        }
+
+        .two-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .guidelines-content h3 {
+            font-size: 2em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .guidelines-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .guidelines-list li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .guidelines-list li:before {
+            content: "•";
+            color: var(--highlight-color);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            font-size: 1.5em;
         }
 
         /* --- Footer --- */
-        .footer {
+        footer {
+            background-color: #1e293b;
+            color: #94a3b8;
+            padding: 50px 0;
             text-align: center;
-            padding: 20px;
-            background-color: #2c3e50;
-            color: #bdc3c7;
+        }
+        
+        footer p {
+            margin: 0;
         }
 
-        /* --- Animations --- */
-        .animate-on-scroll {
-            opacity: 0;
-            transform: translateY(50px);
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        @media (max-width: 768px) {
+            .two-column-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-content h1 {
+                font-size: 2.5em;
+            }
         }
-        .animate-on-scroll.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        /* --- Guidelines Section --- */
-    .guidelines-section {
-        background-color: #f4f7f6; /* A light, neutral background to separate it from other sections */
-        padding: 100px 0;
-        text-align: center;
-    }
 
-    .guidelines-grid {
-        display: grid;
-        /* Creates a responsive grid that adds more columns as space allows */
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 30px;
-        margin-top: 40px;
-        text-align: left; /* Aligns text inside cards to the left */
-    }
-
-    .guideline-card {
-        background-color: white;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        /* Adds a colored accent line to the top of each card */
-        border-top: 4px solid #3498db;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .guideline-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    }
-
-    .guideline-card h3 {
-        margin-top: 0;
-        font-size: 1.4rem;
-        color: #2c3e50; /* A dark, professional color for headings */
-        margin-bottom: 10px;
-    }
-
-    .guideline-card p {
-        margin-bottom: 0;
-        color: #555; /* Slightly lighter text color for the description */
-        line-height: 1.7;
-    }
-
-    /* General styles that might be used by the section */
-    .content-section {
-        padding: 100px 0;
-        text-align: center;
-    }
-
-    .content-container {
-        width: 90%;
-        max-width: 1100px;
-        margin: 0 auto;
-    }
-
-    .content-container h2 {
-        font-size: 2.5rem;
-        font-weight: 600;
-        margin-bottom: 20px;
-    }
-
-
-    /* --- Responsive Design --- */
-    @media (max-width: 768px) {
-        .main-title { font-size: 2.5rem; }
-        .subtitle { font-size: 1.2rem; }
-        .about-section .content-container { grid-template-columns: 1fr; }
-        .about-section .image-content { order: -1; } /* Image on top */
-    }
-
-
-</style>
+    </style>
 </head>
 <body>
-    
-    <nav class="navbar">
-        <div class="logo">
-            <img src="{{ url_for('static', filename='skin.jpg') }}" alt="logo" style="height: 40px; width: 40px; border-radius: 10%;">
-            <span>DermoSys.</span>
+
+    <nav class="main-nav">
+        <div class="container nav-content">
+            <a href="#" class="logo">DermSys</a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#guidelines">Guidelines</a>
+                <a href="{{ url_for('login') }}" class="cta-button">Portal Login</a>
+            </div>
         </div>
-        <div class="nav-links">
-            <a href="#about">About Us</a>
-            <a href="#services">Services</a>
-            <a href="#technology">Technology</a>
-            <a href="#guidelines">Guidelines</a>
-            <!-- <a href="#contact">Contact</a> -->
-        </div>
-        <a href="{{ url_for('login') }}" class="cta-button">
-            Access Portal
-            <i class="fa-solid fa-arrow-right-to-bracket"></i>
-        </a>
     </nav>
 
-    <!-- Section 1: Hero Welcome -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1 class="main-title">Welcome to DermoSys</h1>
-            <p class="subtitle">Advanced Care for Healthy Skin</p>
+    <header class="hero-section">
+        <div class="container hero-content">
+            <h1>The Future of Dermatology Practice Management</h1>
+            <p>Streamline patient records, manage appointments, and deliver exceptional care with an all-in-one, intelligent clinical system.</p>
+            <a href="{{ url_for('register') }}" class="cta-button" style="padding: 15px 30px; font-size: 1.1em;">Get Started Now</a>
         </div>
-    </section>
+    </header>
 
-    <section id="about" class="section">
-        <section class="content-section about-section">
-        <div class="content-container animate-on-scroll">
-            <div class="text-content">
-                <h2>Explore Our Department</h2>
-                <p>We are a dedicated team of dermatology professionals committed to providing the highest standard of care for your skin, hair, and nails. Our philosophy blends compassionate healing with innovative medical solutions to ensure every patient receives personalized and effective treatment.</p>
-                <p>Dermatology is the branch of medicine dedicated to the diagnosis and treatment of conditions related to the skin, hair, and nails. It addresses a wide range of issues, from common conditions like acne and eczema to complex diseases like skin cancer, providing both medical and surgical solutions to maintain the health and appearance of the body's largest organ.</p>
-            </div>
-            <div class="image-content">
-                <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" alt="Doctor looking at a tablet with medical data">
-            </div>
-        </div>
-    </section>
-    </section>
-    <!-- Section 3: Features of DermoSys -->
-    <section class="content-section features-section">
-        <div class="content-container animate-on-scroll">
-            <h2>Our System Features</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <i class="fa-solid fa-users"></i>
-                    <h3>Patient Management</h3>
-                    <p>Comprehensive patient records, visit history, and demographic data all in one place.</p>
+    <main>
+        <section id="features" class="features-section">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Everything Your Clinic Needs</h2>
+                    <p>DermSys is built with powerful, intuitive features to enhance productivity and patient outcomes.</p>
                 </div>
-                <div class="feature-card">
-                    <i class="fa-solid fa-camera"></i>
-                    <h3>Image Gallery</h3>
-                    <p>Visually track patient progress with a dedicated gallery for clinical photos.</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <h3>Analytics</h3>
-                    <p>Gain insights into clinical data with an interactive and informative dashboard.</p>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="icon"><i class="fas fa-users"></i></div>
+                        <h3>Patient Management</h3>
+                        <p>Maintain comprehensive patient profiles, from initial registration to follow-up visits and medical history, all in one secure place.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon"><i class="fas fa-pills"></i></div>
+                        <h3>E-Prescribing</h3>
+                        <p>Generate, manage, and print prescriptions quickly. Reduce errors and improve patient safety with our integrated medication database.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon"><i class="fas fa-chart-pie"></i></div>
+                        <h3>Clinical Analytics</h3>
+                        <p>Gain insights from your clinical data. Track patient demographics, disease frequency, and user activity with our interactive dashboard.</p>
+                    </div>
                 </div>
             </div>
+        </section>
+
+        <section id="guidelines" class="guidelines-section">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Application Guidelines</h2>
+                    <p>Learn how to make the most of DermSys for your dermatology practice</p>
+                </div>
+                <div class="two-column-layout">
+                    <div class="guidelines-content">
+                        <h3>Getting Started</h3>
+                        <ul class="guidelines-list">
+                            <li>Register your clinic account with basic information</li>
+                            <li>Set up your user profile with appropriate permissions</li>
+                            <li>Add your medical staff with role-based access</li>
+                            <li>Configure your clinic settings and preferences</li>
+                            <li>Import or add your existing patient database</li>
+                            <li>Familiarize yourself with the dashboard layout</li>
+                        </ul>
+                    </div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+                            <h3>Appointment Management</h3>
+                            <p>Schedule, reschedule, and track patient appointments with our intuitive calendar system.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="icon"><i class="fas fa-file-medical"></i></div>
+                            <h3>Medical Records</h3>
+                            <p>Maintain detailed electronic health records with secure access and backup.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 DermSys. All Rights Reserved. Simplifying Dermatology Care.</p>
         </div>
-    </section>
-
-    <section id="services" class="section">
-        <h2 class="section-title">Our Clinical Services</h2>
-        <div class="services-grid">
-            <div class="service-card">
-                <div class="icon"><i class="fas fa-stethoscope"></i></div>
-                <h3>Comprehensive Diagnostics</h3>
-                <p>Utilizing advanced lab testing and imaging to accurately diagnose a wide range of dermatological conditions.</p>
-            </div>
-            <div class="service-card">
-                <div class="icon"><i class="fas fa-user-md"></i></div>
-                <h3>Personalized Patient Care</h3>
-                <p>From initial registration to follow-up visits, every patient receives a tailored treatment plan for their unique needs.</p>
-            </div>
-            <div class="service-card">
-                <div class="icon"><i class="fas fa-procedures"></i></div>
-                <h3>Advanced Treatment & Prescriptions</h3>
-                <p>Access to modern medical and surgical treatments, managed through our integrated digital prescription system.</p>
-            </div>
-            <!-- <div class="service-card">
-                <div class="icon"><i class="fas fa-procedures"></i></div>
-                <h3>In-Patient & Bed Management</h3>
-                <p>Dedicated care for admitted patients, efficiently managed through our systematic bed allocation and progress monitoring.</p>
-            </div> -->
-        </div>
-    </section>
-    <section id="guidelines" class="content-section guidelines-section">
-    <div class="content-container animate-on-scroll">
-        <h2>DermoSys Guidelines</h2>
-        <div class="guidelines-grid">
-            
-            <!-- Guideline Point 1 -->
-            <div class="guideline-card">
-                <h3>Patient Registration</h3>
-                <p>Create comprehensive patient profiles by capturing demographics, vitals, initial complaints, and medical history. The system automatically calculates BMI and BSA, assigning a unique patient code for easy tracking.</p>
-            </div>
-            
-            <!-- Guideline Point 2 -->
-            <div class="guideline-card">
-                <h3>Follow-up Management</h3>
-                <p>For returning patients, record new observations and track progress chronologically. Update treatment plans and examination findings through the "Patient Visit" feature to maintain a continuous care record.</p>
-            </div>
-            
-            <!-- Guideline Point 3 -->
-            <div class="guideline-card">
-                <h3>Digital Prescriptions</h3>
-                <p>Generate and manage digital prescriptions with ease. Select from a list of medications, specify dosage and frequency, and set a "Next Follow-up Date" to automate patient adherence tracking.</p>
-            </div>
-            
-            <!-- Guideline Point 4 -->
-            <div class="guideline-card">
-                <h3>Dashboard Analytics</h3>
-                <p>Utilize the main dashboard for a real-time overview of key clinical statistics. Monitor patient trends with interactive charts, track missed follow-ups, and review detailed staff activity via the user audit trail.</p>
-            </div>
-
-            <!-- Guideline Point 5 -->
-            <div class="guideline-card">
-                <h3>Lab & Image Management</h3>
-                <p>Centralize all diagnostic materials. Upload clinical photos directly to patient profiles, request external radiology scans, and manage lab reports to create a complete visual and diagnostic history.</p>
-            </div>
-
-            <!-- Guideline Point 6 -->
-            <div class="guideline-card">
-                <h3>In-Patient Bed Allocation</h3>
-                <p>Efficiently manage admitted patients by assigning them to available beds. Record daily progress notes and process discharge summaries to ensure a seamless and well-documented in-patient workflow.</p>
-            </div>
-
-        </div>
-    </div>
-</section>
-
-    <section id="technology" class="section">
-         <div class="hero-overlay"></div>
-         <div class="technology-content">
-            <h2 class="section-title" style="color:white;">Powered by Innovation</h2>
-            <p>Our department operates on a state-of-the-art digital platform that streamlines patient management, from registration and electronic health records to lab reports and prescriptions. This allows our medical professionals to focus on what matters most: you.</p>
-        </div>
-    </section>
-    <section class="cta-section">
-        <div class="content-container animate-on-scroll">
-            <h2>Ready to Streamline Your Workflow?</h2>
-            <p>Access the DermoSys portal to manage your clinic with efficiency and precision.</p>
-            <a href="{{ url_for('login') }}" class="cta-button-main">Get Started</a>
-        </div>
-    </section>
-
-   
-
-    <footer class="footer">
-        <p>&copy; 2025 Dermatology Department. All Rights Reserved.</p>
     </footer>
-
-<script>
-    const sections = document.querySelectorAll('.section');
-
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
-        });
-    }, {
-        threshold: 0.1
-    });
-
-    sections.forEach(section => {
-        observer.observe(section);
-    });
-    // JavaScript for fade-in animations on scroll
-        const scrollObserver = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        });
-
-        const elementsToAnimate = document.querySelectorAll('.animate-on-scroll');
-        elementsToAnimate.forEach((el) => scrollObserver.observe(el));
-</script>
 
 </body>
 </html>

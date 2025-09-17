@@ -1,180 +1,221 @@
 {% extends "base.html" %}
-
+{% block title %}Diagnostic Reports{% endblock %}
 {% block content %}
-<style>
-    /* --- Modal (Pop-up) Styles --- */
-    .modal-backdrop {
-        display: none; /* Hidden by default */
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.5);
-        justify-content: center;
-        align-items: center;
-    }
-    .modal-content {
-        background-color: #fefefe;
-        margin: auto;
-        padding: 25px;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 600px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #e5e5e5;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
-    }
-    .modal-header h4 { margin: 0; font-size: 1.25em; font-weight: 600; }
-    .modal-close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
-    .modal-close:hover { color: black; }
-</style>
-
-<div class="page-header">
-    <h1>Diagnostic Reports</h1>
-    <button type="button" class="button" onclick="openModal('radiologyModal')">
-        <i class="fa-solid fa-plus"></i> Request New Radiology Scan
-    </button>
-</div>
-
-{% if error %}
-<div class="alert danger" style="margin-top: 20px;">
-    <strong>Error:</strong> {{ error }}
-</div>
-{% endif %}
-
-{% if dicom_file %}
-<div class="card" style="margin-top: 25px;">
-    <div class="card-header"><h4>DICOM Viewer: {{ dicom_file }}</h4></div>
-    <div class="card-body">
-        <div id="dicomImage" class="border" style="width:100%; height:512px; background-color:black;"></div>
-    </div>
-</div>
-<script src="https://unpkg.com/cornerstone-core@2.3.0/dist/cornerstone.js"></script>
-<script src="https://unpkg.com/dicom-parser@1.8.7/dist/dicomParser.js"></script>
-<script src="https://unpkg.com/cornerstone-wado-image-loader@3.1.2/dist/cornerstoneWADOImageLoader.js"></script>
-<script>
-    try {
-        cornerstoneWADOImageLoader.webWorkerManager.initialize({
-            maxWebWorkers: navigator.hardwareConcurrency || 1,
-            startWebWorkersOnDemand: true,
-            taskConfiguration: { 'decodeTask': { initializeCodecsOnStartup: false, usePDFJS: false, strict: false } }
-        });
-    } catch (error) { console.error("Web Worker initialization failed.", error); }
-
-    const element = document.getElementById('dicomImage');
-    cornerstone.enable(element);
-    cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
-    const dicomFileName = "{{ dicom_file }}";
-    const imageId = `wadouri:${window.location.origin}/dicom/${dicomFileName}`;
-
-    cornerstone.loadAndCacheImage(imageId).then(function(image) {
-        cornerstone.displayImage(element, image);
-    }).catch(function(err) {
-        console.error("Error loading DICOM image:", err);
-        element.innerHTML = `<div style="padding:1rem; color: #ffb3b3;">Failed to load DICOM image. Check console.</div>`;
-    });
-</script>
-{% endif %}
-
-{% for department, reports in grouped_reports.items() %}
-    <h3 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">{{ department }}</h3>
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Patient</th>
-                <th>Report Type</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for report in reports %}
-            <tr>
-                <td>{{ report.patient_name }} ({{ report.patient_code }})</td>
-                <td>{{ report.report_type }}</td>
-                <td>{{ report.report_date.strftime('%d %b %Y') }}</td>
-                <td><span class="status-badge {{ report.status|lower }}">{{ report.status }}</span></td>
-                <td>
-                    {% if report.status == 'Completed' and report.file_path %}
-                        <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="button secondary">View File</a>
-                    {% else %}
-                        <span>-</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <p>No internal lab reports found.</p>
-{% endfor %}
-
-
-<div id="radiologyModal" class="modal-backdrop">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h4>Request Radiology Scan (External API)</h4>
-            <span class="modal-close" onclick="closeModal('radiologyModal')">&times;</span>
+    <style>
+        :root {
+            --primary-color: #2c6eb5;
+            --secondary-color: #f8f9fa;
+            --accent-color: #e9ecef;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-color), #1a4f87);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .page-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .department-header {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            font-size: 1.4em;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .styled-table thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .styled-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .styled-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .styled-table tbody tr:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .actions-cell {
+            width: 15%;
+            text-align: center;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .status-badge.pending {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
+        
+        .status-badge.completed {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.15s ease-in-out;
+        }
+        
+        .button.secondary {
+            background-color: #35c5f0;
+            color: #0e4379;
+        }
+        
+        .button.secondary:hover {
+            background-color: #29b0d9;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .card {
+                overflow-x: auto;
+            }
+            
+            .styled-table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1>Diagnostic Reports</h1>
+                <p>A central dashboard to monitor all requested lab and radiology reports.</p>
+            </div>
         </div>
-        <form action="{{ url_for('list_lab_reports') }}" method="POST" class="form-grid">
-            <div class="form-group">
-                <label>Department</label>
-                <input type="text" name="department" value="RADIOLOGY" class="form-control" readonly>
-            </div>
-            <div class="form-group">
-                <label for="uhid">Patient UHID</label>
-                <input type="text" name="uhid" class="form-control" placeholder="Enter Patient UHID" required>
-            </div>
-            <div class="form-group">
-                <label for="scan_type">Scan Type</label>
-                <select name="scan_type" class="form-control" required>
-                    <option value="" disabled selected>Select Scan Type</option>
-                    <option value="CT">CT</option>
-                    <option value="MR">MR</option>
-                    <option value="XRAY">XRAY</option>
-                    <option value="US">ULTRASOUND</option>
-                    <option value="PET">PET</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="body_part">Body Part</label>
-                <input type="text" name="body_part" id="body_part" 
-                       class="form-control" placeholder="e.g., BRAIN, CHEST" required
-                       oninput="this.value = this.toUpperCase()">
-            </div>
-            <div class="form-group">
-                 <button type="submit" class="button">Request Scan</button>
-            </div>
-        </form>
+
+        {% if grouped_reports %}
+            {% for department, reports in grouped_reports.items() %}
+                <h3 class="department-header">{{ department }}</h3>
+                <div class="card">
+                    <div class="card-body" style="padding: 0;">
+                        <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Report Type</th>
+                                    <th>Date Requested</th>
+                                    <th>Status</th>
+                                    <th class="actions-cell">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('patient_detail', patient_id=report.patient_id) }}" style="color: var(--primary-color); text-decoration: none;">
+                                            {{ report.patient_name }} ({{ report.patient_code }})
+                                        </a>
+                                    </td>
+                                    <td>{{ report.report_type }}</td>
+                                    <td>{{ report.report_date.strftime('%d %b %Y') }}</td>
+                                    <td><span class="status-badge {{ report.status|lower }}">{{ report.status }}</span></td>
+                                    <td class="actions-cell">
+                                        {% if report.status == 'Completed' and report.file_path %}
+                                            <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="button secondary">View File</a>
+                                        {% else %}
+                                            <span>-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty-state">No diagnostic reports have been requested yet.</p>
+        {% endif %}
     </div>
-</div>
-
-<script>
-// --- JavaScript for Modal Control ---
-function openModal(modalId) {
-    document.getElementById(modalId).style.display = "flex";
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).style.display = "none";
-}
-
-window.onclick = function(event) {
-    const modal = document.getElementById('radiologyModal');
-    if (event.target == modal) {
-        closeModal('radiologyModal');
-    }
-}
-</script>
-
+</body>
+</html>
 {% endblock %}

@@ -17,6 +17,9 @@ from flask import (Flask, render_template, request, redirect, url_for, g,
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
+from radiology_api import radiology_bp, perform_radiology_request
+from lab_api import lab_bp
+
 # --- App Configuration & Setup ---
 app = Flask(__name__)
 app.secret_key = 'a-very-secure-and-random-secret-key-for-production'
@@ -40,100 +43,29 @@ DB_CONFIG = {
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-# --- Radiology API Integration Helpers ---
-def save_stream_to_file(resp, out_path, chunk_size=8192):
-    with open(out_path, 'wb') as f:
-        for chunk in resp.iter_content(chunk_size):
-            if chunk:
-                f.write(chunk)
+# This dictionary contains the detailed lab test structure.
+TEST_CATEGORIES = {
+    'biochemistry': {
+        'Kidney Function': ['GLU', 'UREA', 'CREATININE'],
+        'Liver Function': ['SGOT', 'SGPT', 'ALBUMIN', 'TOTAL_BILIRUBIN'],
+        'Thyroid Function': ['TSH', 'T3', 'T4'],
+        'Cardiac Markers': ['TROPONIN_I'],
+        'Lipid Profile': ['TOTAL_CHOLESTEROL', 'HDL', 'LDL'],
+        'Electrolytes': ['SODIUM', 'POTASSIUM']
+    },
+    'microbiology': {
+        'Wet Mount & Staining': ['GRAM_STAIN', 'HANGING_DROP', 'INDIA_INK', 'STOOL_OVA', 'KOH_MOUNT', 'ZN_STAIN'],
+        'Culture & Sensitivity': ['BLOOD_CULTURE', 'URINE_CULTURE', 'SPUTUM_CULTURE', 'WOUND_CULTURE', 'THROAT_CULTURE', 'CSF_CULTURE'],
+        'Fungal Culture': ['FUNGAL_CULTURE', 'FUNGAL_ID', 'ANTIFUNGAL_SENS'],
+        'Serology': ['WIDAL', 'TYPHIDOT', 'DENGUE_NS1', 'MALARIA_AG', 'HIV_ELISA', 'HBSAG']
+    },
+    'pathology': {
+        'Histopathology': ['BIOPSY_HISTOPATHOLOGY', 'SURGICAL_PATHOLOGY'],
+        'Hematology': ['CBC', 'PERIPHERAL_SMEAR', 'BONE_MARROW', 'COAGULATION'],
+        'Immunohistochemistry': ['IHC_MARKERS', 'SPECIAL_STAINS', 'MOLECULAR_PATH']
+    }
+}
 
-def download_scan(db, session, host, scan_id, out_dir, uhid, scan_type, body_part):
-    url = f"{host.rstrip('/')}/api/scans/download/{scan_id}"
-    try:
-        with requests.get(url, stream=True, timeout=30) as r:
-            if r.ok:
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                fname = f"{uhid or 'scan'}_{scan_id}_{ts}.dcm"
-                out_path = os.path.join(out_dir, fname)
-                save_stream_to_file(r, out_path)
-                
-                cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-                cursor.execute("SELECT id FROM Patient WHERE patient_code = %s", (uhid,))
-                patient = cursor.fetchone()
-                if patient:
-                    report_name = f"{scan_type.upper()} {body_part.upper()}"
-                    cursor.execute("""
-                        INSERT INTO LabReport (patient_id, report_type, department, report_date, status, file_path, requested_by_doctor_id)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (patient['id'], report_name, 'Radiology', datetime.now(), 'Completed', fname, session['user_id']))
-                    db.commit()
-                cursor.close()
-                return fname
-    except Exception as e:
-        logging.error(f"Error in download_scan: {e}")
-        return None
-
-def poll_request_status(db, session, host, request_id, timeout_s, poll_interval_s, out_dir, uhid, scan_type, body_part):
-    status_url = f"{host.rstrip('/')}/api/request_status/{request_id}"
-    started = time.time()
-    while time.time() - started < timeout_s:
-        try:
-            r = requests.get(status_url, timeout=15)
-            if r.ok:
-                j = r.json()
-                status = j.get('status')
-                scan_id = j.get('scan_id')
-                if status and status.lower() in ('attended', 'completed') and scan_id:
-                    return download_scan(db, session, host, scan_id, out_dir, uhid, scan_type, body_part)
-        except requests.RequestException:
-            pass
-        time.sleep(poll_interval_s)
-    return None
-
-def perform_request(db, session, host, department, uhid, scan_type, body_part):
-    url = f"{host.rstrip('/')}/api/v1/get_or_request_scan"
-    payload = {"department_name": department, "uhid": uhid, "type_of_scan": scan_type, "body_part": body_part}
-    headers = {'Accept': 'application/json, application/dicom, */*'}
-
-    try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=30, stream=True)
-    except requests.RequestException as e:
-        return None, f"Request error: {e}"
-
-    if resp.status_code == 200:
-        if 'application/json' in resp.headers.get('Content-Type', '').lower():
-            return None, f"Received unexpected JSON: {resp.json()}"
-        else:
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            fname = f"{uhid or 'scan'}_{ts}.dcm"
-            out_path = os.path.join("downloads", fname)
-            save_stream_to_file(resp, out_path)
-            cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cursor.execute("SELECT id FROM Patient WHERE patient_code = %s", (uhid,))
-            patient = cursor.fetchone()
-            if patient:
-                report_name = f"{scan_type.upper()} {body_part.upper()}"
-                cursor.execute("""
-                    INSERT INTO LabReport (patient_id, report_type, department, report_date, status, file_path, requested_by_doctor_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (patient['id'], report_name, 'Radiology', datetime.now(), 'Completed', fname, session['user_id']))
-                db.commit()
-            cursor.close()
-            return fname, None
-
-    if resp.status_code == 202:
-        j = resp.json()
-        request_id = j.get('request_id') or j.get('id')
-        if not request_id:
-            return None, f"Server returned 202 but no request_id was found: {j}"
-        
-        fname = poll_request_status(db, session, host, request_id, 300.0, 3.0, "downloads", uhid, scan_type, body_part)
-        if fname:
-            return fname, None
-        else:
-            return None, "Polling timed out or the final download failed."
-
-    return None, f"Server returned error {resp.status_code}: {resp.text[:400]}"
 
 # --- Database Connection ---
 def get_db():
@@ -170,6 +102,64 @@ def admin_required(f):
 @app.route('/')
 def index():
     return render_template('landing.html')
+
+@app.route('/patient/<int:patient_id>/request_investigation', methods=['POST'])
+@login_required
+def request_investigation(patient_id):
+    """
+    This single route handles both Radiology and Lab requests based on
+    the 'request_type' from the dynamic modal.
+    """
+    request_type = request.form.get('request_type')
+    db_conn = get_db()
+
+    # --- Section for handling Radiology requests ---
+    if request_type == 'radiology':
+        uhid = request.form.get('uhid')
+        scan_type = request.form.get('radiology_scan_type')
+        body_part = request.form.get('radiology_body_part')
+
+        if not all([uhid, scan_type, body_part]):
+            flash("Missing fields for radiology scan request.", "danger")
+            return redirect(url_for('patient_detail', patient_id=patient_id))
+        
+        # Call the function from the radiology_api.py blueprint
+        filename, error = perform_radiology_request(db_conn, patient_id, uhid, scan_type, body_part)
+        
+        if error:
+            flash(f"Radiology request failed: {error}", "danger")
+        else:
+            flash(f"Radiology scan '{filename}' successfully requested and added to patient gallery.", "success")
+
+    # --- Section for handling Lab requests ---
+    elif request_type == 'lab':
+        # Get a list of tests from checkboxes, not a single text field
+        requested_tests = request.form.getlist('lab_tests')
+        department = request.form.get('lab_department', 'Pathology')
+
+        # Check if the list is empty
+        if not requested_tests:
+            flash("You must select at least one lab test.", "danger")
+            return redirect(url_for('patient_detail', patient_id=patient_id))
+        
+        try:
+            with db_conn.cursor() as cursor:
+                # Loop through the selected tests and create a record for each one
+                for test_name in requested_tests:
+                    sql = "INSERT INTO LabReport (patient_id, requested_by_doctor_id, report_type, department, report_date, status) VALUES (%s, %s, %s, %s, %s, 'Pending')"
+                    cursor.execute(sql, (patient_id, session['user_id'], test_name, department, date.today()))
+                db_conn.commit()
+            flash(f"Lab tests requested successfully.", 'success')
+        except Exception as e:
+            db_conn.rollback()
+            flash(f"Database error requesting lab test: {e}", "danger")
+    
+    # --- Fallback for invalid request types ---
+    else:
+        flash("Invalid request type submitted.", "warning")
+
+    return redirect(url_for('patient_detail', patient_id=patient_id))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -320,6 +310,59 @@ def dashboard():
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
+    # --- 1. PATIENT LIST SEARCH & PAGINATION LOGIC (NEWLY ADDED) ---
+    page = request.args.get('page', 1, type=int)
+    PER_PAGE = 15 # Or your preferred number of patients per page
+
+    # Get search parameters from the form
+    search_name = request.args.get('name', '').strip()
+    search_patient_code = request.args.get('patient_code', '').strip()
+    search_mobile = request.args.get('mobile_number', '').strip()
+    search_status = request.args.get('status', '').strip()
+
+    # Dynamically build the WHERE clause for searching
+    where_clauses = []
+    params = []
+    if search_name:
+        where_clauses.append("name ILIKE %s")
+        params.append(f"%{search_name}%")
+    if search_patient_code:
+        where_clauses.append("patient_code ILIKE %s")
+        params.append(f"%{search_patient_code}%")
+    if search_mobile:
+        where_clauses.append("mobile_number ILIKE %s")
+        params.append(f"%{search_mobile}%")
+    if search_status == 'admitted':
+        where_clauses.append("is_admitted = TRUE")
+    elif search_status == 'discharged':
+        where_clauses.append("is_admitted = FALSE")
+
+    where_sql = ""
+    if where_clauses:
+        where_sql = "WHERE " + " AND ".join(where_clauses)
+        
+    # Get the total count of patients for pagination
+    count_sql = f"SELECT COUNT(*) FROM Patient {where_sql}"
+    cursor.execute(count_sql, tuple(params))
+    total_patients_count = cursor.fetchone()[0]
+    total_pages = math.ceil(total_patients_count / PER_PAGE)
+    offset = (page - 1) * PER_PAGE
+
+    # Fetch the paginated list of patients
+    patient_query_params = list(params)
+    patient_query_params.extend([PER_PAGE, offset])
+    # *** FIX: Calculate age from 'dob' column instead of selecting a non-existent 'age' column ***
+    patients_sql = f"""
+        SELECT id, patient_code, name, DATE_PART('year', AGE(dob)) as age, gender, diagnosis, is_admitted 
+        FROM Patient 
+        {where_sql}
+        ORDER BY id DESC 
+        LIMIT %s OFFSET %s
+    """
+    cursor.execute(patients_sql, tuple(patient_query_params))
+    patients = cursor.fetchall()
+    
+    # --- 2. EXISTING STATS AND USER LOGIC (Unchanged) ---
     stats = {}
     cursor.execute("SELECT COUNT(*) FROM Patient")
     stats['total_patients'] = cursor.fetchone()[0]
@@ -329,8 +372,6 @@ def dashboard():
     stats['total_beds'] = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM LabReport WHERE status = 'Pending'")
     stats['pending_reports'] = cursor.fetchone()[0]
-    
-    # Updated KPI for Missed Follow-ups and total scheduled
     cursor.execute("""
         SELECT COUNT(DISTINCT p.id)
         FROM Patient p
@@ -382,7 +423,7 @@ def dashboard():
             minutes, seconds = divmod(remainder, 60)
             user_dict['active_time_str'] = f"{hours:02}:{minutes:02}:{seconds:02}"
             all_users.append(user_dict)
-        
+            
         if all_users:
             employee_summary['total'] = len(all_users)
             employee_summary['active'] = sum(1 for u in all_users if u['is_active'])
@@ -390,7 +431,6 @@ def dashboard():
             employee_summary['doctors'] = sum(1 for u in all_users if u['role_name'].lower() == 'doctor')
             employee_summary['staff'] = sum(1 for u in all_users if u['role_name'].lower() == 'staff')
 
-    # Fetch data for missed follow-ups to display on the dashboard itself
     cursor.execute("""
         SELECT 
             p.id, p.patient_code, p.name, p.mobile_number,
@@ -408,17 +448,22 @@ def dashboard():
         ORDER BY days_overdue DESC;
     """)
     missed_follow_up_patients = cursor.fetchall()
-
+    
     cursor.close()
     
+    # --- 3. PASS ALL VARIABLES (OLD AND NEW) TO THE TEMPLATE ---
     return render_template('dashboard.html', 
-                           stats=stats, 
-                           disease_data=disease_counts, 
-                           gender_data=gender_counts,
-                           all_users=all_users,
-                           employee_summary=employee_summary,
-                           missed_follow_up_patients=missed_follow_up_patients)
-    
+                            stats=stats, 
+                            disease_data=disease_counts, 
+                            gender_data=gender_counts,
+                            all_users=all_users,
+                            employee_summary=employee_summary,
+                            missed_follow_up_patients=missed_follow_up_patients,
+                            # Add the new variables for the patient list
+                            patients=patients,
+                            total_pages=total_pages,
+                            page=page)
+
 # --- CORRECTED and ROBUST Patient Registration Route ---
 @app.route('/register_patient', methods=['GET', 'POST'])
 @login_required
@@ -544,60 +589,59 @@ def list_patients():
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
-    query = """
-        SELECT id, patient_code, name, gender, diagnosis,
-               to_char(date_of_registration, 'YYYY-MM-DD') as date_of_registration,
-               CASE 
-                   WHEN dob = 'infinity'::date OR dob = '-infinity'::date THEN NULL
-                   ELSE date_part('year', age(dob))
-               END as age
-        FROM Patient
-    """
-    
-    filters = []
+    page = request.args.get('page', 1, type=int)
+    PER_PAGE = 15
+
+    # Get search parameters
+    search_name = request.args.get('name', '').strip()
+    search_patient_code = request.args.get('patient_code', '').strip()
+    search_mobile = request.args.get('mobile_number', '').strip()
+    search_status = request.args.get('status', '').strip()
+
+    where_clauses = []
     params = []
-    search_params = request.args
-    if search_params:
-        patient_id = search_params.get('patient_id')
-        mobile = search_params.get('mobile')
-        age_from = search_params.get('age_from')
-        age_to = search_params.get('age_to')
-        date_from = search_params.get('date_from')
-        date_to = search_params.get('date_to')
-        if patient_id:
-            filters.append("(LOWER(patient_code) LIKE %s OR CAST(id AS TEXT) LIKE %s)")
-            params.extend([f"%{patient_id.lower()}%", f"%{patient_id}%"])
-        if mobile:
-            filters.append("mobile_number LIKE %s")
-            params.append(f"%{mobile}%")
-        if age_from:
-            filters.append("date_part('year', age(dob)) >= %s")
-            params.append(int(age_from))
-        if age_to:
-            filters.append("date_part('year', age(dob)) <= %s")
-            params.append(int(age_to))
-        if date_from:
-            filters.append("date_of_registration >= %s")
-            params.append(date_from)
-        if date_to:
-            filters.append("date_of_registration <= %s")
-            params.append(date_to)
-            
-    if filters:
-        query += " WHERE " + " AND ".join(filters)
-    query += " ORDER BY id DESC"
-    
-    patients = []
-    try:
-        cursor.execute(query, tuple(params))
-        patients = cursor.fetchall()
-    except psycopg2.Error as e:
-        logging.error(f"Database error in list_patients: {e}")
-        flash("A database error occurred while fetching patients. This might be due to invalid data.", "danger")
-    finally:
-        cursor.close()
+    if search_name:
+        where_clauses.append("name ILIKE %s")
+        params.append(f"%{search_name}%")
+    if search_patient_code:
+        where_clauses.append("patient_code ILIKE %s")
+        params.append(f"%{search_patient_code}%")
+    if search_mobile:
+        where_clauses.append("mobile_number ILIKE %s")
+        params.append(f"%{search_mobile}%")
+    if search_status == 'admitted':
+        where_clauses.append("is_admitted = TRUE")
+    elif search_status == 'discharged':
+        where_clauses.append("is_admitted = FALSE")
+
+    where_sql = ""
+    if where_clauses:
+        where_sql = "WHERE " + " AND ".join(where_clauses)
         
-    return render_template('patients.html', patients=patients, search_params=search_params)
+    count_sql = f"SELECT COUNT(*) FROM Patient {where_sql}"
+    cursor.execute(count_sql, tuple(params))
+    total_patients_count = cursor.fetchone()[0]
+    total_pages = math.ceil(total_patients_count / PER_PAGE)
+    offset = (page - 1) * PER_PAGE
+
+    patient_query_params = list(params)
+    patient_query_params.extend([PER_PAGE, offset])
+    patients_sql = f"""
+        SELECT id, patient_code, name, DATE_PART('year', AGE(dob)) as age, gender, diagnosis, is_admitted 
+        FROM Patient 
+        {where_sql}
+        ORDER BY id DESC 
+        LIMIT %s OFFSET %s
+    """
+    cursor.execute(patients_sql, tuple(patient_query_params))
+    patients = cursor.fetchall()
+    cursor.close()
+        
+    return render_template('patients.html', 
+                           patients=patients, 
+                           total_pages=total_pages,
+                           page=page,
+                           search_params=request.args)
 
 @app.route('/patient/<int:patient_id>')
 @login_required
@@ -605,15 +649,14 @@ def patient_detail(patient_id):
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
-    # Fetch basic patient info
     cursor.execute("SELECT *, date_part('year', age(dob)) as age FROM Patient WHERE id = %s", (patient_id,))
     patient = cursor.fetchone()
     if not patient:
         flash('Patient not found.', 'danger')
         return redirect(url_for('list_patients'))
 
-    # --- NEW: Check for current admission details ---
-    admission = None
+    # Check for CURRENT admission
+    current_admission = None
     daily_notes = []
     if patient['is_admitted']:
         cursor.execute("""
@@ -622,18 +665,27 @@ def patient_detail(patient_id):
             JOIN Bed b ON ba.bed_id = b.id
             WHERE ba.patient_id = %s AND ba.discharge_date IS NULL
         """, (patient_id,))
-        admission = cursor.fetchone()
+        current_admission = cursor.fetchone()
         
-        if admission:
+        if current_admission:
             cursor.execute("""
                 SELECT dpn.*, u.username as doctor_name
-                FROM DailyProgressNote dpn
-                JOIN Users u ON dpn.doctor_id = u.id
+                FROM DailyProgressNote dpn JOIN Users u ON dpn.doctor_id = u.id
                 WHERE dpn.assignment_id = %s ORDER BY dpn.note_date DESC
-            """, (admission['id'],))
+            """, (current_admission['id'],))
             daily_notes = cursor.fetchall()
+
+    # NEW: Fetch PAST, discharged admission history
+    cursor.execute("""
+        SELECT ba.id, ba.admission_date, ba.discharge_date, ba.discharge_summary, b.bed_number
+        FROM BedAssignment ba
+        JOIN Bed b ON ba.bed_id = b.id
+        WHERE ba.patient_id = %s AND ba.discharge_date IS NOT NULL
+        ORDER BY ba.discharge_date DESC
+    """, (patient_id,))
+    admission_history = cursor.fetchall()
     
-    # Fetch other details as before
+    # Fetch other patient details as before
     cursor.execute("SELECT fv.*, u.username as doctor_name FROM FollowUpVisit fv JOIN Users u ON fv.doctor_id = u.id WHERE fv.patient_id = %s ORDER BY fv.visit_date DESC", (patient_id,))
     followup_visits = cursor.fetchall()
     
@@ -653,7 +705,6 @@ def patient_detail(patient_id):
     
     cursor.close()
     
-    # CORRECTED: Pass the new admission and daily_notes variables to the template
     return render_template('patient_detail.html', 
                            patient=patient, 
                            followup_visits=followup_visits,
@@ -661,8 +712,10 @@ def patient_detail(patient_id):
                            lab_reports=lab_reports,
                            images=images, 
                            now=datetime.now(),
-                           admission=admission,
-                           daily_notes=daily_notes)
+                           admission=current_admission,
+                           daily_notes=daily_notes,
+                           admission_history=admission_history,  # Pass history to template
+                           lab_test_categories=TEST_CATEGORIES)
 
 # In app.py, add this new function
 
@@ -978,45 +1031,7 @@ def upload_lab_report(report_id):
     cursor.close()
     return render_template('upload_lab_report.html', report=report)
 
-@app.route('/patient/<int:patient_id>/request_lab_report', methods=['GET', 'POST'])
-@login_required
-def request_lab_report(patient_id):
-    if request.method == 'POST':
-        report_type = request.form['report_type']
-        department = request.form['department']
-        
-        if department.lower() == 'radiology':
-            scan_type = request.form['radiology_scan_type']
-            body_part = request.form['radiology_body_part']
-            
-            db = get_db()
-            cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cursor.execute("SELECT patient_code FROM Patient WHERE id = %s", (patient_id,))
-            patient_code = cursor.fetchone()['patient_code']
-            cursor.close()
-            
-            fname, err = perform_request(db, session, RADIOLOGY_API_HOST, "Dermatology", patient_code, scan_type, body_part)
-            if err:
-                flash(f"Radiology request failed: {err}", "danger")
-            else:
-                flash(f"Radiology scan '{fname}' downloaded and report created.", "success")
-        else:
-            db = get_db()
-            cursor = db.cursor()
-            sql = """
-                INSERT INTO LabReport (patient_id, requested_by_doctor_id, report_type, 
-                                       department, report_date, status) 
-                VALUES (%s, %s, %s, %s, %s, 'Pending')
-            """
-            cursor.execute(sql, (patient_id, session['user_id'], report_type, department, date.today()))
-            db.commit()
-            cursor.close()
-            flash('Lab report requested successfully.', 'success')
-            
-        return redirect(url_for('patient_detail', patient_id=patient_id))
-        
-    return render_template('request_lab_report.html', patient_id=patient_id)
-    
+
 # --- Bed Management ---
 @app.route('/bed_management')
 @login_required
@@ -1116,42 +1131,6 @@ def assign_bed(bed_id):
         cursor.close()
     return redirect(url_for('bed_management'))
 
-@app.route('/assignment/<int:assignment_id>/discharge', methods=['GET', 'POST'])
-@login_required
-def discharge_patient(assignment_id):
-    db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
-    if request.method == 'POST':
-        try:
-            cursor.execute("SELECT bed_id, patient_id FROM BedAssignment WHERE id = %s", (assignment_id,))
-            assignment = cursor.fetchone()
-            if assignment:
-                cursor.execute("UPDATE BedAssignment SET discharge_date = %s WHERE id = %s", (datetime.now(), assignment_id))
-                cursor.execute("UPDATE Bed SET status = 'Available' WHERE id = %s", (assignment['bed_id'],))
-                cursor.execute("UPDATE Patient SET is_admitted = FALSE WHERE id = %s", (assignment['patient_id'],))
-                db.commit()
-                flash('Patient discharged successfully.', 'success')
-            else:
-                flash('Assignment not found.', 'danger')
-        except (Exception, psycopg2.Error) as e:
-            db.rollback()
-            flash(f'Error during discharge: {e}', 'danger')
-        finally:
-            cursor.close()
-        return redirect(url_for('bed_management'))
-    
-    # GET request logic
-    cursor.execute("SELECT p.id, p.name, p.patient_code, p.diagnosis FROM BedAssignment ba JOIN Patient p ON ba.patient_id = p.id WHERE ba.id = %s", (assignment_id,))
-    patient = cursor.fetchone()
-    cursor.close()
-    
-    if not patient:
-        flash('Patient or assignment not found.', 'danger')
-        return redirect(url_for('bed_management'))
-        
-    # CORRECTED: Pass the assignment_id to the template
-    return render_template('discharge_summary.html', patient=patient, assignment_id=assignment_id, auto_summary="Patient was treated for...")
 
 # --- User Management (Admin) ---
 @app.route('/user/<int:user_id>/toggle_status', methods=['POST'])
@@ -1205,6 +1184,8 @@ def weekly_registrations():
     
     return jsonify(labels=labels, values=values)
     
+# app.py
+
 @app.route('/api/user_activity/<int:user_id>')
 @login_required
 @admin_required
@@ -1212,42 +1193,89 @@ def get_user_activity(user_id):
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
-    # Registrations
-    cursor.execute("""
-        SELECT 'Patient Registration' as type, p.name, p.id as patient_id, p.date_of_registration as activity_date 
-        FROM Patient p 
-        WHERE p.registered_by_doctor_id = %s
-    """, (user_id,))
-    registrations = cursor.fetchall()
+    all_activities = []
 
-    # Follow-ups
-    cursor.execute("""
-        SELECT 'Follow-up Visit' as type, p.name, p.id as patient_id, fv.visit_date as activity_date 
-        FROM FollowUpVisit fv 
-        JOIN Patient p ON fv.patient_id = p.id
-        WHERE fv.doctor_id = %s
-    """, (user_id,))
-    follow_ups = cursor.fetchall()
+    try:
+        # Check if the registered_by_doctor_id column exists
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='patient' AND column_name='registered_by_doctor_id'
+        """)
+        has_registered_by_column = cursor.fetchone() is not None
+        
+        if has_registered_by_column:
+            # Patient Registrations (if column exists)
+            cursor.execute("""
+                SELECT 
+                    'Patient Registration' as type, 
+                    p.name, 
+                    p.id as patient_id, 
+                    p.date_of_registration::timestamp as activity_date -- FIX: Cast DATE to TIMESTAMP
+                FROM Patient p 
+                WHERE p.registered_by_doctor_id = %s
+                ORDER BY p.date_of_registration DESC
+            """, (user_id,))
+        else:
+            # Fallback: Show all patients if column doesn't exist
+            cursor.execute("""
+                SELECT 
+                    'Patient Registration' as type, 
+                    p.name, 
+                    p.id as patient_id, 
+                    p.date_of_registration::timestamp as activity_date -- FIX: Cast DATE to TIMESTAMP
+                FROM Patient p 
+                ORDER BY p.date_of_registration DESC
+                LIMIT 10
+            """)
+            
+        registrations = cursor.fetchall()
+        for reg in registrations:
+            all_activities.append(dict(reg))
 
-    # Prescriptions
-    cursor.execute("""
-        SELECT 'Prescription Created' as type, p.name, p.id as patient_id, pr.prescription_date as activity_date 
-        FROM Prescription pr
-        JOIN Patient p ON pr.patient_id = p.id
-        WHERE pr.doctor_id = %s
-    """, (user_id,))
-    prescriptions = cursor.fetchall()
+        # Follow-up Visits
+        cursor.execute("""
+            SELECT 
+                'Follow-up Visit' as type, 
+                p.name, 
+                p.id as patient_id, 
+                fv.visit_date::timestamp as activity_date -- FIX: Cast DATE to TIMESTAMP
+            FROM FollowUpVisit fv 
+            JOIN Patient p ON fv.patient_id = p.id
+            WHERE fv.doctor_id = %s
+            ORDER BY fv.visit_date DESC
+        """, (user_id,))
+        followups = cursor.fetchall()
+        for followup in followups:
+            all_activities.append(dict(followup))
 
-    all_activity = registrations + follow_ups + prescriptions
+        # Prescriptions (This query is already correct as it uses a TIMESTAMP)
+        cursor.execute("""
+            SELECT 
+                'Prescription Created' as type, 
+                p.name, 
+                p.id as patient_id, 
+                pr.prescription_date as activity_date 
+            FROM Prescription pr
+            JOIN Patient p ON pr.patient_id = p.id
+            WHERE pr.doctor_id = %s
+            ORDER BY pr.prescription_date DESC
+        """, (user_id,))
+        prescriptions = cursor.fetchall()
+        for prescription in prescriptions:
+            all_activities.append(dict(prescription))
+        
+    except Exception as e:
+        logging.error(f"Error fetching user activity for user {user_id}: {e}")
+        return jsonify({"error": "Failed to fetch user activity"}), 500
+        
+    finally:
+        cursor.close()
+
+    # Sort all activities by date (newest first)
+    all_activities.sort(key=lambda x: x['activity_date'], reverse=True)
     
-    # Sort all activities by date in descending order
-    all_activity.sort(key=lambda x: x['activity_date'], reverse=True)
-    
-    # Convert activity data to a list of dictionaries
-    activity_log = [dict(row) for row in all_activity]
-
-    cursor.close()
-    return jsonify(activity_log)
+    return jsonify(all_activities)
     
 @app.route('/api/patient/<string:uhid>', methods=['GET'])
 def get_dermatology_data(uhid):
@@ -1262,6 +1290,7 @@ def get_dermatology_data(uhid):
                 "diagnosis": "Chronic Plaque Psoriasis",
                 "record_date": "2025-08-29",
                 "record_id": "REC-73451",
+                "follow_up_visit_count": 0, # dummy value
                 "test_results": {
                     "bsa": 1.85,
                     "affected_bsa_percent": 12.5,
@@ -1288,6 +1317,7 @@ def get_dermatology_data(uhid):
                 "diagnosis": "Nodulocystic Acne",
                 "record_date": "2025-07-15",
                 "record_id": "REC-73109",
+                "follow_up_visit_count": 2, # dummy value
                 "test_results": {
                     "bsa": 1.60,
                     "affected_bsa_percent": 4.0,
@@ -1337,6 +1367,9 @@ def get_dermatology_data(uhid):
         {"report_name": report['report_type'], "result": f"Report available at {report['file_path']}" if report['file_path'] else "Pending"}
         for report in lab_reports_db
     ]
+    cursor.execute("SELECT COUNT(id) as visit_count FROM FollowUpVisit WHERE patient_id = %s", (patient['id'],))
+    visit_count_result = cursor.fetchone()
+    visit_count = visit_count_result['visit_count'] if visit_count_result else 0
 
     response = {
         "department": "Dermatology Department",
@@ -1344,6 +1377,7 @@ def get_dermatology_data(uhid):
             "diagnosis": patient['diagnosis'],
             "record_date": patient['date_of_registration'].strftime('%Y-%m-%d') if patient['date_of_registration'] else None,
             "record_id": f"REC-{patient['id']}",
+            "follow_up_visit_count": visit_count,  # Placeholder; implement actual count if needed
             "test_results": {
                 "bsa": patient['initial_bsa'],
                 "affected_bsa_percent": patient['affected_bsa_percentage'],
@@ -1451,42 +1485,86 @@ def diagnostic_center_upload():
 
 # In app.py, replace your existing delete_images function with this corrected version.
 
-@app.route('/diagnostic_center/delete_images', methods=['POST'])
+@app.route('/image/<int:image_id>/delete', methods=['POST'])
 @login_required
-@admin_required
+def delete_image(image_id):
+    db = get_db()
+    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        # First, get the image details from the DB to find the filename and patient_id
+        cursor.execute("SELECT image_filename, patient_id FROM PatientImage WHERE id = %s", (image_id,))
+        image = cursor.fetchone()
+
+        if image:
+            patient_id_for_redirect = image['patient_id']
+            file_to_delete = os.path.join(app.config['UPLOAD_FOLDER'], image['image_filename'])
+
+            # Delete the database record
+            cursor.execute("DELETE FROM PatientImage WHERE id = %s", (image_id,))
+            db.commit()
+
+            # Try to delete the actual file from the server
+            if os.path.exists(file_to_delete):
+                os.remove(file_to_delete)
+            
+            flash('Image deleted successfully.', 'success')
+            return redirect(url_for('patient_detail', patient_id=patient_id_for_redirect))
+
+        else:
+            flash('Image not found.', 'danger')
+            return redirect(request.referrer or url_for('list_patients'))
+
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error deleting image {image_id}: {e}")
+        flash('An error occurred while deleting the image.', 'danger')
+        return redirect(request.referrer or url_for('list_patients'))
+    finally:
+        cursor.close()   
+
+# --- ADD THIS NEW FUNCTION to app.py ---
+
+@app.route('/images/delete', methods=['POST'])
+@login_required
 def delete_images():
-    image_ids_to_delete = request.form.getlist('image_ids')
-    if not image_ids_to_delete:
+    """Handles bulk deletion of images from the diagnostic center."""
+    image_ids = request.form.getlist('image_ids')
+    if not image_ids:
         flash('No images selected for deletion.', 'warning')
         return redirect(url_for('diagnostic_center'))
 
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
-    placeholders = ','.join(['%s'] * len(image_ids_to_delete))
-    
-    # CORRECTED: Select 'image_filename' instead of 'file_path'
-    cursor.execute(f"SELECT image_filename FROM PatientImage WHERE id IN ({placeholders})", tuple(image_ids_to_delete))
-    images = cursor.fetchall()
-    
-    for img in images:
-        try:
-            # CORRECTED: Use the 'image_filename' column from the result
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], img['image_filename'])
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except OSError as e:
-            # Use the correct column name in the error log as well
-            logging.error(f"Error deleting file {img['image_filename']}: {e}")
+    deleted_count = 0
+    try:
+        for image_id in image_ids:
+            # Get image details to find the filename for deletion
+            cursor.execute("SELECT image_filename FROM PatientImage WHERE id = %s", (image_id,))
+            image = cursor.fetchone()
+            if image and image['image_filename']:
+                file_to_delete = os.path.join(app.config['UPLOAD_FOLDER'], image['image_filename'])
+                
+                # 1. Delete the database record
+                cursor.execute("DELETE FROM PatientImage WHERE id = %s", (image_id,))
+                
+                # 2. Try to delete the actual file from the server
+                if os.path.exists(file_to_delete):
+                    os.remove(file_to_delete)
+                
+                deleted_count += 1
+        
+        db.commit()
+        if deleted_count > 0:
+            flash(f'{deleted_count} image(s) deleted successfully.', 'success')
 
-    # Delete records from the database
-    cursor.execute(f"DELETE FROM PatientImage WHERE id IN ({placeholders})", tuple(image_ids_to_delete))
-    db.commit()
-    cursor.close()
-
-    flash(f'{len(images)} image(s) have been successfully deleted.', 'success')
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error during bulk image deletion: {e}")
+        flash('An error occurred while deleting the images.', 'danger')
+    finally:
+        cursor.close()
+    
     return redirect(url_for('diagnostic_center'))
-
 
 @app.route('/patients/download')
 @login_required
@@ -1626,43 +1704,162 @@ def delete_prescription(prescription_id):
 
 # --- ADD THIS NEW FUNCTION to app.py ---
 
-@app.route('/image/<int:image_id>/delete', methods=['POST'])
+  
+
+@app.route('/assignment/<int:assignment_id>/discharge', methods=['GET', 'POST'])
 @login_required
-def delete_image(image_id):
+def discharge_patient(assignment_id):
+    """
+    Handles the creation of a NEW discharge summary.
+    - GET: Shows the form, auto-generating a summary from daily notes.
+    - POST: Saves the final summary, updates patient/bed status, and completes the discharge.
+    """
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    try:
-        # First, get the image details from the DB to find the filename and patient_id
-        cursor.execute("SELECT file_path, patient_id FROM PatientImage WHERE id = %s", (image_id,))
-        image = cursor.fetchone()
+    
+    if request.method == 'POST':
+        # This block handles SAVING the new discharge summary.
+        discharge_summary = request.form.get('discharge_summary', 'Patient discharged without summary.')
+        try:
+            cursor.execute("SELECT bed_id, patient_id FROM BedAssignment WHERE id = %s", (assignment_id,))
+            assignment = cursor.fetchone()
+            if assignment:
+                # Update the record with the discharge date and the full summary text
+                cursor.execute(
+                    "UPDATE BedAssignment SET discharge_date = %s, discharge_summary = %s WHERE id = %s",
+                    (datetime.now(), discharge_summary, assignment_id)
+                )
+                # Update related records
+                cursor.execute("UPDATE Bed SET status = 'Available' WHERE id = %s", (assignment['bed_id'],))
+                cursor.execute("UPDATE Patient SET is_admitted = FALSE WHERE id = %s", (assignment['patient_id'],))
+                db.commit()
+                flash('Patient discharged successfully.', 'success')
+            else:
+                flash('Assignment not found.', 'danger')
+        except (Exception, psycopg2.Error) as e:
+            db.rollback()
+            flash(f'Error during discharge: {e}', 'danger')
+        finally:
+            cursor.close()
+        return redirect(url_for('bed_management'))
+    
+    # This block handles SHOWING the form for a NEW discharge (GET request).
+    cursor.execute("""
+        SELECT p.id, p.name, p.patient_code, p.diagnosis, b.bed_number
+        FROM BedAssignment ba 
+        JOIN Patient p ON ba.patient_id = p.id
+        JOIN Bed b ON ba.bed_id = b.id
+        WHERE ba.id = %s
+    """, (assignment_id,))
+    patient_info = cursor.fetchone()
 
-        if image:
-            patient_id_for_redirect = image['patient_id']
-            file_to_delete = os.path.join(app.config['UPLOAD_FOLDER'], image['file_path'])
+    if not patient_info:
+        cursor.close()
+        flash('Patient or assignment not found.', 'danger')
+        return redirect(url_for('bed_management'))
+        
+    cursor.execute("""
+        SELECT dpn.notes, dpn.note_date, u.username as doctor_name
+        FROM DailyProgressNote dpn
+        JOIN Users u ON dpn.doctor_id = u.id
+        WHERE dpn.assignment_id = %s
+        ORDER BY dpn.note_date ASC
+    """, (assignment_id,))
+    notes = cursor.fetchall()
+    cursor.close()
 
-            # Delete the database record
-            cursor.execute("DELETE FROM PatientImage WHERE id = %s", (image_id,))
-            db.commit()
+    # Auto-generate the summary string
+    summary_parts = []
+    if patient_info['diagnosis']:
+        summary_parts.append(f"Patient was admitted with a diagnosis of {patient_info['diagnosis']}.")
+    
+    summary_parts.append("\nCourse of treatment during hospital stay:")
+    if notes:
+        for note in notes:
+            note_date = note['note_date'].strftime('%d-%b-%Y')
+            summary_parts.append(f"- On {note_date}, Dr. {note['doctor_name']} noted: {note['notes']}")
+    else:
+        summary_parts.append("- No daily progress notes were recorded.")
+        
+    auto_summary = "\n".join(summary_parts)
 
-            # Try to delete the actual file from the server
-            if os.path.exists(file_to_delete):
-                os.remove(file_to_delete)
+    return render_template(
+        'discharge_summary.html', 
+        patient=patient_info, 
+        assignment_id=assignment_id,
+        auto_summary=auto_summary,
+        is_editing=False # Flag to tell the template this is a new discharge
+    )
+
+
+@app.route('/assignment/<int:assignment_id>/edit_summary', methods=['GET', 'POST'])
+@login_required
+def edit_discharge_summary(assignment_id):
+    """
+    Handles EDITING an EXISTING discharge summary.
+    - GET: Fetches the saved summary, parses it, and pre-fills the form.
+    - POST: Saves the updated summary text to the existing record.
+    """
+    db = get_db()
+    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    if request.method == 'POST':
+        # This block handles SAVING the edited summary.
+        updated_summary = request.form.get('discharge_summary')
+        try:
+            cursor.execute("SELECT patient_id FROM BedAssignment WHERE id = %s", (assignment_id,))
+            assignment = cursor.fetchone()
             
-            flash('Image deleted successfully.', 'success')
-            return redirect(url_for('patient_detail', patient_id=patient_id_for_redirect))
+            cursor.execute("UPDATE BedAssignment SET discharge_summary = %s WHERE id = %s", (updated_summary, assignment_id))
+            db.commit()
+            flash('Discharge summary updated successfully.', 'success')
+            
+            if assignment:
+                return redirect(url_for('patient_detail', patient_id=assignment['patient_id']))
+        except (Exception, psycopg2.Error) as e:
+            db.rollback()
+            flash(f'Error updating summary: {e}', 'danger')
+        finally:
+            cursor.close()
+        return redirect(url_for('bed_management'))
 
-        else:
-            flash('Image not found.', 'danger')
-            return redirect(request.referrer or url_for('list_patients'))
+    # This block handles SHOWING the form for EDITING (GET request).
+    cursor.execute("""
+        SELECT ba.discharge_summary, p.id, p.name, p.patient_code, p.diagnosis, b.bed_number
+        FROM BedAssignment ba 
+        JOIN Patient p ON ba.patient_id = p.id
+        JOIN Bed b ON ba.bed_id = b.id
+        WHERE ba.id = %s
+    """, (assignment_id,))
+    assignment_data = cursor.fetchone()
+    cursor.close()
 
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error deleting image {image_id}: {e}")
-        flash('An error occurred while deleting the image.', 'danger')
-        return redirect(request.referrer or url_for('list_patients'))
-    finally:
-        cursor.close()   
+    if not assignment_data:
+        flash('Assignment not found.', 'danger')
+        return redirect(url_for('bed_management'))
 
+    # Parse the saved summary string back into its component parts
+    full_summary = assignment_data['discharge_summary'] or ''
+    parts = {'diagnosis': '', 'summary': '', 'follow_up': ''}
+    try:
+        diag_split = full_summary.split('SUMMARY OF HOSPITAL STAY:')
+        parts['diagnosis'] = diag_split[0].replace('FINAL DIAGNOSIS:', '').strip()
+        
+        summary_split = diag_split[1].split('FOLLOW-UP PLAN:')
+        parts['summary'] = summary_split[0].strip()
+        parts['follow_up'] = summary_split[1].strip()
+    except IndexError:
+        parts['summary'] = full_summary
+
+    return render_template(
+        'discharge_summary.html',
+        patient=assignment_data,
+        assignment_id=assignment_id,
+        is_editing=True,  # Flag to tell the template it's in "edit mode"
+        existing_diagnosis=parts['diagnosis'],
+        auto_summary=parts['summary'],
+        existing_follow_up=parts['follow_up']
+    )
 # --- ADD THIS NEW FUNCTION to app.py ---
 
 @app.route('/patient/<int:patient_id>/edit_initial', methods=['POST'])
@@ -1726,9 +1923,7 @@ def mobile_upload(patient_id):
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             
-            # === THIS IS THE CORRECTED PART ===
-            # CORRECTED: Changed 'file_path' to 'image_filename'
-            # CORRECTED: Changed 'caption' to 'notes' to match your schema
+          
             cursor.execute(
                 "INSERT INTO PatientImage (patient_id, image_filename, upload_date, notes) VALUES (%s, %s, %s, %s)",
                 (patient_id, filename, datetime.now().date(), 'Uploaded via mobile')
@@ -1744,7 +1939,204 @@ def mobile_upload(patient_id):
     # For a GET request, just show the upload page
     cursor.close()
     return render_template('mobile_upload.html', patient=patient)
+
+
+
+# --- NEW: API for Patient Search with Visit Count ---
+@app.route('/api/search_patients')
+@login_required
+def search_patients():
+    """
+    API endpoint for live search in the follow-up form.
+    Returns patient data including their total number of past follow-up visits.
+    """
+    query = request.args.get('q', '')
+    if len(query) < 2:
+        return jsonify([])
+
+    db = get_db()
+    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
+    sql = """
+        SELECT 
+            p.id, 
+            p.patient_code, 
+            p.name, 
+            COUNT(fv.id) as visit_count
+        FROM Patient p
+        LEFT JOIN FollowUpVisit fv ON p.id = fv.patient_id
+        WHERE p.name ILIKE %s OR p.patient_code ILIKE %s
+        GROUP BY p.id, p.patient_code, p.name
+        ORDER BY p.name
+        LIMIT 10;
+    """
+    search_term = f"%{query}%"
+    cursor.execute(sql, (search_term, search_term))
+    patients = [dict(row) for row in cursor.fetchall()]
+    cursor.close()
+    
+    return jsonify(patients)
+
+# --- REPLACE the old search_external_uhid function with this NEW version ---
+
+@app.route('/api/external/search_uhid')
+@login_required
+def search_external_uhid():
+    """
+    Simulated API endpoint that mimics the new receptionist form (patient_entry.html).
+    - Temperature is now kept in Fahrenheit (°F) as requested.
+    - It consolidates lifestyle/history fields into a single 'past_medical_history' block.
+    - It calculates an approximate DOB from the provided age.
+    """
+    query = request.args.get('q', '').lower()
+    if len(query) < 2:
+        return jsonify([])
+
+    # --- DUMMY DATA based on patient_entry.html ---
+    reception_patients = [
+        {
+            'uhid': 'R-2025-001', 'name': 'Aditya Sharma', 'age': 45, 'gender': 'Male',
+            'phone_number': '9988776655', 'email': 'aditya.s@example.com', 'address': '123 Jubilee Hills, Hyderabad',
+            'temp_f': 98.6, 'bp_sys': 130, 'bp_dia': 85, 'sugar': 140, 'height': 170, 'weight': 78,
+            'smoking_status': 'Former', 'alcohol_frequency': 'Occasional', 'physical_activity': '1-2 days',
+            'chronic_conditions': 'Hypertension (HTN)', 'current_medications': 'Telmisartan 40mg', 'allergies': 'None'
+        },
+        {
+            'uhid': 'R-2025-002', 'name': 'Priya Singh', 'age': 32, 'gender': 'Female',
+            'phone_number': '9122334455', 'email': 'priya.s@example.com', 'address': '456 Gachibowli, Hyderabad',
+            'temp_f': 99.1, 'bp_sys': 115, 'bp_dia': 75, 'sugar': 95, 'height': 160, 'weight': 62,
+            'smoking_status': 'Never', 'alcohol_frequency': 'None', 'physical_activity': '3-4 days',
+            'chronic_conditions': 'None', 'current_medications': 'Multivitamins', 'allergies': 'Penicillin'
+        }
+    ]
+    # --- END DUMMY DATA ---
+
+    results = []
+    for p in reception_patients:
+        if query in p['name'].lower() or query in p['uhid'].lower():
+            # Consolidate history and lifestyle fields
+            history_summary = (
+                f"--- Past History ---\n"
+                f"Chronic Conditions: {p.get('chronic_conditions', 'N/A')}\n"
+                f"Current Medications: {p.get('current_medications', 'N/A')}\n"
+                f"Allergies: {p.get('allergies', 'N/A')}\n\n"
+                f"--- Lifestyle ---\n"
+                f"Smoking: {p.get('smoking_status', 'N/A')}\n"
+                f"Alcohol: {p.get('alcohol_frequency', 'N/A')}\n"
+                f"Physical Activity: {p.get('physical_activity', 'N/A')} per week"
+            )
+
+            # Calculate an approximate Date of Birth from age
+            from datetime import date, timedelta
+            today = date.today()
+            approx_dob = (today - timedelta(days=p.get('age', 0) * 365.25)).strftime('%Y-%m-%d')
+
+            results.append({
+                'uhid': p.get('uhid'),
+                'name': p.get('name'),
+                'dob': approx_dob,
+                'gender': p.get('gender'),
+                'phone_number': p.get('phone_number'),
+                'email': p.get('email'),
+                'address': p.get('address'),
+                'temp': p.get('temp_f'), # MODIFICATION: Sending Fahrenheit directly
+                'bp_sys': p.get('bp_sys'),
+                'bp_dia': p.get('bp_dia'),
+                'sugar': p.get('sugar'),
+                'height': p.get('height'),
+                'weight': p.get('weight'),
+                'past_medical_history': history_summary
+            })
+
+    return jsonify(results)
+
+# --- ADD the @admin_required decorator to this function ---
+
+@app.route('/lab_report/<int:report_id>/delete', methods=['POST'])
+@login_required
+@admin_required  # <-- ADD THIS LINE
+def delete_lab_report(report_id):
+    db = get_db()
+    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        # ... rest of the function remains the same
+        cursor.execute("SELECT patient_id FROM LabReport WHERE id = %s", (report_id,))
+        report = cursor.fetchone()
+        if not report:
+            flash('Lab report not found.', 'danger')
+            return redirect(url_for('list_patients'))
+
+        patient_id = report['patient_id']
+        cursor.execute("DELETE FROM LabReport WHERE id = %s", (report_id,))
+        db.commit()
+        flash('Lab report has been successfully deleted.', 'success')
+        return redirect(url_for('patient_detail', patient_id=patient_id))
+
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error deleting lab report {report_id}: {e}")
+        flash('An error occurred while trying to delete the lab report.', 'danger')
+        if 'patient_id' in locals():
+             return redirect(url_for('patient_detail', patient_id=patient_id))
+        return redirect(url_for('list_lab_reports'))
+    finally:
+        cursor.close()
+
+# --- NEW: Route for Standalone Follow-up Visit Form ---
+@app.route('/patient_visit', methods=['GET', 'POST'])
+@login_required
+def patient_visit():
+    """
+    Handles the standalone follow-up visit form.
+    - GET: Displays the form with the patient search bar.
+    - POST: Saves the new follow-up visit to the database.
+    """
+    if request.method == 'POST':
+        db = get_db()
+        cursor = db.cursor()
+        try:
+            patient_id = request.form.get('patient_id')
+            if not patient_id:
+                flash('No patient selected. Please search and select a patient first.', 'danger')
+                return redirect(url_for('patient_visit'))
+
+            # Save the visit details to the database
+            sql = """
+                INSERT INTO FollowUpVisit (patient_id, doctor_id, visit_date, complaints, 
+                                           examination_findings, diagnosis, treatment_plan) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (
+                patient_id, session['user_id'], date.today(), 
+                request.form.get('complaints'), 
+                request.form.get('examination_findings'), 
+                request.form.get('diagnosis'), 
+                request.form.get('updated_treatment_plan')
+            ))
+            db.commit()
+            flash('Follow-up visit recorded successfully.', 'success')
+            return redirect(url_for('patient_detail', patient_id=patient_id))
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error adding follow-up visit from patient_visit route: {e}")
+            flash('An error occurred while saving the visit.', 'danger')
+        finally:
+            cursor.close()
+        return redirect(url_for('patient_visit'))
+        
+    return render_template('patient_visit.html')
+
+# --- NEW ROUTE TO DISPLAY THE STANDALONE FORM ---
+@app.route('/request_investigation_form')
+@login_required
+def request_investigation_form():
+    """Renders the standalone investigation request page."""
+    return render_template('request_lab_report.html')
+
+
+app.register_blueprint(radiology_bp, url_prefix='/api/radiology')
+app.register_blueprint(lab_bp, url_prefix='/api/lab')
+
 # --- Final Main execution block (ngrok removed for manual execution) ---
 if __name__ == '__main__':
     port = 5001
@@ -1764,33 +2156,3 @@ if __name__ == '__main__':
 
     # Start the Flask server
     app.run(host='0.0.0.0', port=port, debug=True)
-# " in the canvas and am asking a query about it.
-# give me one final app.py code and base.html by correcting all the above issues
-
-
-
-
-# ```
-
-# Now that you have the final code, here is the simple, two-step plan to solve all the remaining issues.
-
-# ### Final Plan to Solve All Issues
-
-# **Step 1: Get Your Public API Links**
-
-# 1.  **Open a new, separate terminal window** (you can use Command Prompt or the VS Code terminal).
-# 2.  In that new terminal, navigate to your project folder and run this single command:
-#     ```bash
-#     ngrok http 5001
-#     ```
-# 3.  This terminal will display your public "Forwarding" URL. You can now use this to build the API links to share. **Keep this terminal running.**
-
-    
-
-# **Step 2: Find and Fix the Registration Error**
-
-# 1.  In your **original terminal**, run the updated `app.py` file:
-#     ```bash
-#     python app.py
-    
-
