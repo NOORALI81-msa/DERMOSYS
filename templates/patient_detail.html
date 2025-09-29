@@ -875,9 +875,9 @@
                 <div class="card">
                     <div class="card-header">
                         <h4>{{ p.prescription.prescription_date.strftime('%d %b %Y') }} <small style="font-weight: 400; color: #555;">(Dr. {{ p.prescription.doctor_name }})</small></h4>
-                        <form action="{{ url_for('delete_prescription', prescription_id=p.prescription.id) }}" method="POST" onsubmit="return confirm('Delete this prescription?');">
-                            <button type="submit" class="btn btn-danger btn-icon" title="Delete Prescription"><i class="fa-solid fa-trash-alt"></i></button>
-                        </form>
+                        {# <!-- <form action="{{ url_for('delete_prescription', prescription_id=p.prescription.id) }}" method="POST" onsubmit="return confirm('Delete this prescription?');">
+                             <button type="submit" class="btn btn-danger btn-icon" title="Delete Prescription"><i class="fa-solid fa-trash-alt"></i></button>
+                        </form>--> #}
                     </div>
                     <div class="card-body">
                         <table class="prescription-table">
@@ -904,9 +904,9 @@
                                 <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
                                     <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Patient Image">
                                 </a>
-                                <form action="{{ url_for('delete_image', image_id=image.id) }}" method="POST" onsubmit="return confirm('Delete this image?');">
+                               {# <!-- <form action="{{ url_for('delete_image', image_id=image.id) }}" method="POST" onsubmit="return confirm('Delete this image?');">
                                     <button type="submit" class="btn-delete-img">&times;</button>
-                                </form>
+                                </form> --> #}
                             </div>
                             {% endif %}{% endfor %}
                         </div>{% else %}<p class="empty-state">No images have been uploaded.</p>{% endif %}
@@ -938,9 +938,9 @@
                                         {% endif %}
                                     </div>
                                     {% if session.get('role_id') == 1 %}
-                                    <form action="{{ url_for('delete_lab_report', report_id=report.id) }}" method="POST" onsubmit="return confirm('Delete this report?');" style="margin: 0;">
+                                   {# <!-- <form action="{{ url_for('delete_lab_report', report_id=report.id) }}" method="POST" onsubmit="return confirm('Delete this report?');" style="margin: 0;">
                                         <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete Report"><i class="fa-solid fa-trash-alt"></i></button>
-                                    </form>
+                                    </form> --> #}
                                     {% endif %}
                                 </div>
                             </div>

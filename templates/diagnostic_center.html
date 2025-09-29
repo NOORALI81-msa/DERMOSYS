@@ -251,16 +251,17 @@
         </div>
 
         <div id="DiagnosticReports" class="tab-content active">
-            <form class="delete-form" action="{{ url_for('delete_images') }}" method="POST">
-                <div class="selection-toolbar">
+            <form>
+             {# class="delete-form" action="{{ url_for('delete_images') }}" method="POST"> #} 
+                <!-- <div class="selection-toolbar">
                     <label><input type="checkbox" class="select-all"> Select All</label>
                     <span class="selection-count">Selected: <strong>0</strong></span>
                     <button type="submit" class="btn btn-danger" disabled>Delete Selected</button>
-                </div>
+                </div>  -->
                 <div class="image-grid">
                     {% for report in diagnostic_reports %}
                     <div class="image-card">
-                        <input type="checkbox" name="image_ids" value="{{ report.id }}" class="image-checkbox">
+                        <!-- <input type="checkbox" name="image_ids" value="{{ report.id }}" class="image-checkbox"> -->
                         <div class="image-thumbnail">
                             <a href="{{ url_for('uploaded_file', filename=report.image_filename) }}" target="_blank">
                                 <img src="{{ url_for('uploaded_file', filename=report.image_filename) }}" alt="Diagnostic Image">
@@ -280,23 +281,24 @@
         </div>
 
         <div id="ClinicalPhotos" class="tab-content">
-            <form class="delete-form" action="{{ url_for('delete_images') }}" method="POST">
-                <div class="selection-toolbar">
+            <form>
+            {# <!-- class="delete-form" action="{{ url_for('delete_images') }}" method="POST">
+               <div class="selection-toolbar">
                     <label><input type="checkbox" class="select-all"> Select All</label>
                     <span class="selection-count">Selected: <strong>0</strong></span>
                     <button type="submit" class="btn btn-danger" disabled>Delete Selected</button>
-                </div>
+                </div>  --> #}
                 <div class="image-grid">
                     {% for image in clinical_photos %}
                     <div class="image-card">
-                        <input type="checkbox" name="image_ids" value="{{ image.id }}" class="image-checkbox">
+                        <!-- <input type="checkbox" name="image_ids" value="{{ image.id }}" class="image-checkbox"> -->
                         <div class="image-thumbnail">
                             <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank">
-                                <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Clinical Photo">
+                                <img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Clinical image">
                             </a>
                         </div>
                         <div class="image-info">
-                            <h3>Clinical Photo</h3>
+                            <h3>Clinical images</h3>
                             <p>Patient: <a href="{{ url_for('patient_detail', patient_id=image.patient_id) }}">{{ image.patient_name }}</a></p>
                             <p>Date: {{ image.upload_date.strftime('%d %b %Y') }}</p>
                         </div>

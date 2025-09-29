@@ -372,10 +372,22 @@ document.addEventListener("DOMContentLoaded", () => {
             acc[type].push(act);
             return acc;
         }, {});
-
+        
         let content = Object.keys(grouped).map(category => {
-            const activities = grouped[category];
-            const tableRows = activities.map(act => {
+        const activities = grouped[category];
+        
+        // Change table header and rows based on the activity type
+        let tableHeader, tableRows;
+        
+        if (category === 'Login' || category === 'Logout') {
+            tableHeader = `<th>Event Type</th><th>Date & Time</th>`;
+            tableRows = activities.map(act => {
+                const activityDate = new Date(act.activity_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+                return `<tr><td>${act.type}</td><td>${activityDate}</td></tr>`;
+            }).join('');
+        } else {
+            tableHeader = `<th>Patient</th><th>Date & Time</th>`;
+            tableRows = activities.map(act => {
                 const activityDate = new Date(act.activity_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
                 return `
                     <tr>
@@ -384,26 +396,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tr>
                 `;
             }).join('');
+        }
 
-            return `
-                <div class="activity-category">
-                    <details open>
-                        <summary>${category} (${activities.length})</summary>
-                        <table class="activity-table">
-                            <thead>
-                                <tr>
-                                    <th>Patient</th>
-                                    <th>Date & Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tableRows}
-                            </tbody>
-                        </table>
-                    </details>
-                </div>
-            `;
-        }).join('');
+        return `
+            <div class="activity-category">
+                <details open>
+                    <summary>${category} (${activities.length})</summary>
+                    <table class="activity-table">
+                        <thead><tr>${tableHeader}</tr></thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </details>
+            </div>
+        `;
+    }).join('');
         
         modalBody.innerHTML = content;
     }

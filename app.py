@@ -472,114 +472,115 @@ def register_patient():
         db = get_db()
         cursor = db.cursor()
         try:
-            # Helper function to safely convert form data to the correct type or None
+            # Check if a patient_id was submitted from the form
+            patient_id = request.form.get('patient_id')
+
+            # --- Fetch all form data (this is your existing helper logic) ---
             def get_form_value(key, value_type=str, default=None):
                 val = request.form.get(key)
-                if val is None or val.strip() == '':
-                    return default
-                try:
-                    return value_type(val)
-                except (ValueError, TypeError):
-                    return default
+                if val is None or val.strip() == '': return default
+                try: return value_type(val)
+                except (ValueError, TypeError): return default
 
-            # Safely get all form values, converting empty strings to None
+            # Core Info
             name = request.form.get('name')
             dob = get_form_value('dob')
             gender = request.form.get('gender')
-            mobile_number = get_form_value('phone_number') or None
-            email = get_form_value('email') or None
-            record_date = get_form_value('record_date')
+            mobile_number = get_form_value('phone_number')
+            email = get_form_value('email')
             address = get_form_value('address')
             city = get_form_value('city')
             state = get_form_value('state')
             pincode = get_form_value('pincode')
-            
+
+            # Vitals and Clinical Info (these get updated on every visit)
             temp = get_form_value('temp', float)
             bp_sys = get_form_value('bp_sys', int)
             bp_dia = get_form_value('bp_dia', int)
-            blood_pressure = f"{bp_sys}/{bp_dia}" if bp_sys is not None and bp_dia is not None else None
-            
+            blood_pressure = f"{bp_sys}/{bp_dia}" if bp_sys and bp_dia else None
             heart_rate = get_form_value('heart_rate', int)
             sugar = get_form_value('sugar', int)
             height_cm = get_form_value('height', float)
             weight_kg = get_form_value('weight', float)
             affected_bsa_percent = get_form_value('affected_bsa', float)
-
-            bmi = None
-            bsa = None
-            if height_cm is not None and weight_kg is not None and height_cm > 0 and weight_kg > 0:
-                bmi = round(weight_kg / ((height_cm / 100) ** 2), 2)
-                bsa = round(math.sqrt((height_cm * weight_kg) / 3600), 2)
-
-            concerns_list = request.form.getlist('concerns')
-            concerns_details = []
-            for concern in concerns_list:
-                detail_key = f"concern_details_{concern.lower().replace(' ', '_')}"
-                detail_value = request.form.get(detail_key, '')
-                if detail_value:
-                    concerns_details.append(f"{concern}: {detail_value}")
-                else:
-                    concerns_details.append(concern)
+            complaints = get_form_value('complaints')
+            diagnosis = get_form_value('diagnosis')
+            initial_treatment_plan = get_form_value('initial_treatment_plan')
             
+            # Combine Past History with new concerns
+            concerns_list = request.form.getlist('concerns')
+            concerns_details = [f"{c}: {request.form.get(f'concern_details_{c.lower().replace(" ", "_")}', '')}" if request.form.get(f'concern_details_{c.lower().replace(" ", "_")}', '') else c for c in concerns_list]
             past_history = request.form.get('past_medical_history', '')
             full_history = past_history
             if concerns_details:
-                full_history += "\n\nPatient Concerns:\n- " + "\n- ".join(concerns_details)
+                full_history += "\n\nPatient Concerns (from this visit):\n- " + "\n- ".join(concerns_details)
 
-            sql_patient = """
-                INSERT INTO Patient (
-                    name, dob, gender, mobile_number, email, date_of_registration,
-                    address, city, state, pincode,
-                    initial_temperature, initial_blood_pressure, initial_pulse_rate, blood_sugar,
-                    initial_height, initial_weight, initial_bmi, initial_bsa,
-                    complaints, past_medical_history, diagnosis, initial_treatment_plan,
-                    registered_by_doctor_id, external_patient_id, affected_bsa_percentage
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-            """
-            cursor.execute(sql_patient, (
-                name, dob, gender, mobile_number, email, record_date,
-                address, city, state, pincode,
-                temp, blood_pressure, heart_rate, sugar,
-                height_cm, weight_kg, bmi, bsa,
-                get_form_value('complaints'), full_history, get_form_value('diagnosis'), 
-                get_form_value('initial_treatment_plan'),
-                session.get('user_id'), get_form_value('external_patient_id'),
-                affected_bsa_percent
-            ))
-            new_patient_id = cursor.fetchone()[0]
-            
-            patient_code = f"DERM-{new_patient_id:05d}"
-            cursor.execute("UPDATE Patient SET patient_code = %s WHERE id = %s", (patient_code, new_patient_id))
+            # Auto-calculate BMI and BSA
+            bmi = bsa = None
+            if height_cm and weight_kg:
+                bmi = round(weight_kg / ((height_cm / 100) ** 2), 2)
+                bsa = round(math.sqrt((height_cm * weight_kg) / 3600), 2)
 
-            i = 1
-            while f'vital_name_{i}' in request.form:
-                vital_name = request.form[f'vital_name_{i}']
-                vital_value = request.form[f'vital_value_{i}']
-                if vital_name and vital_value:
-                    cursor.execute(
-                        "INSERT INTO AdditionalVitals (patient_id, vital_name, vital_value, record_date) VALUES (%s, %s, %s, %s)",
-                        (new_patient_id, vital_name, vital_value, record_date)
-                    )
-                i += 1
-            
+            if patient_id:
+                # --- UPDATE LOGIC ---
+                # Updates the existing patient record with new visit information
+                sql_update = """
+                    UPDATE Patient SET 
+                        name = %s, dob = %s, gender = %s, mobile_number = %s, email = %s,
+                        address = %s, city = %s, state = %s, pincode = %s,
+                        initial_temperature = %s, initial_blood_pressure = %s, initial_pulse_rate = %s,
+                        blood_sugar = %s, initial_height = %s, initial_weight = %s, 
+                        initial_bmi = %s, initial_bsa = %s, complaints = %s, 
+                        past_medical_history = %s, diagnosis = %s, initial_treatment_plan = %s,
+                        affected_bsa_percentage = %s
+                    WHERE id = %s
+                """
+                cursor.execute(sql_update, (
+                    name, dob, gender, mobile_number, email, address, city, state, pincode,
+                    temp, blood_pressure, heart_rate, sugar, height_cm, weight_kg, bmi, bsa,
+                    complaints, full_history, diagnosis, initial_treatment_plan,
+                    affected_bsa_percent, patient_id
+                ))
+                flash(f'Patient {name} updated successfully!', 'success')
+                redirect_url = url_for('patient_detail', patient_id=patient_id)
+
+            else:
+                # --- CREATE LOGIC (Your original code) ---
+                sql_insert = """
+                    INSERT INTO Patient (
+                        name, dob, gender, mobile_number, email, date_of_registration, address, city, state, pincode,
+                        initial_temperature, initial_blood_pressure, initial_pulse_rate, blood_sugar,
+                        initial_height, initial_weight, initial_bmi, initial_bsa, complaints,
+                        past_medical_history, diagnosis, initial_treatment_plan, affected_bsa_percentage,
+                        registered_by_doctor_id, external_patient_id
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
+                """
+                cursor.execute(sql_insert, (
+                    name, dob, gender, mobile_number, email, date.today(), address, city, state, pincode,
+                    temp, blood_pressure, heart_rate, sugar, height_cm, weight_kg, bmi, bsa,
+                    complaints, full_history, diagnosis, initial_treatment_plan, affected_bsa_percent,
+                    session.get('user_id'), get_form_value('external_patient_id')
+                ))
+                new_patient_id = cursor.fetchone()[0]
+                
+                patient_code = f"DERM-{new_patient_id:05d}"
+                cursor.execute("UPDATE Patient SET patient_code = %s WHERE id = %s", (patient_code, new_patient_id))
+                
+                flash(f'New patient {name} registered successfully!', 'success')
+                redirect_url = url_for('patient_detail', patient_id=new_patient_id)
+
             db.commit()
-            flash(f'New patient {name} registered successfully with code {patient_code}!', 'success')
-            return redirect(url_for('patient_detail', patient_id=new_patient_id))
-            
-        except psycopg2.Error as e: # Catch specific database errors
-            db.rollback()
-            # This will now print the actual SQL error to your terminal for debugging
-            logging.error(f"DATABASE ERROR during patient registration: {e}")
-            flash('A database error occurred. Please ensure all required fields are filled correctly.', 'danger')
+            return redirect(redirect_url)
+
         except Exception as e:
             db.rollback()
-            # This will catch any other Python errors
-            logging.error(f"UNEXPECTED ERROR during patient registration: {e}")
-            flash('An unexpected error occurred. Please check the data and try again.', 'danger')
+            logging.error(f"Error during patient save/update: {e}")
+            flash('An error occurred. Please check the data.', 'danger')
         finally:
             cursor.close()
 
-    return render_template('register_patient.html')
+    # For a GET request, show a blank form for a new patient
+    return render_template('register_patient.html', patient=None, is_editing=False)
 
 
 # --- Patient Routes ---
@@ -766,60 +767,30 @@ def add_daily_note(assignment_id):
 
     return redirect(url_for('dashboard'))
 
-@app.route('/patient/<int:patient_id>/edit', methods=['GET', 'POST'])
+# In app.py
+
+@app.route('/patient/<int:patient_id>/edit', methods=['GET'])
 @login_required
 def edit_patient(patient_id):
+    """
+    This route now ONLY displays the registration form pre-filled
+    with an existing patient's data.
+    """
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    if request.method == 'POST':
-        sql = """
-            UPDATE Patient SET 
-            name = %s, dob = %s, gender = %s, mobile_number = %s, email = %s,
-            address = %s, city = %s, state = %s, pincode = %s
-            WHERE id = %s
-        """
-        try:
-            cursor.execute(sql, (
-                request.form['name'], request.form.get('dob'), request.form['gender'],
-                request.form.get('phone_number'), request.form.get('email'),
-                request.form.get('address'), request.form.get('city'),
-                request.form.get('state'), request.form.get('pincode'),
-                patient_id
-            ))
-            db.commit()
-            flash('Patient details updated successfully.', 'success')
-            return redirect(url_for('patient_detail', patient_id=patient_id))
-        except Exception as e:
-            db.rollback()
-            logging.error(f"Error updating patient: {e}")
-            flash('Error updating patient details.', 'danger')
-        finally:
-            cursor.close()
-
+    
     cursor.execute("SELECT * FROM Patient WHERE id = %s", (patient_id,))
     patient = cursor.fetchone()
     cursor.close()
+    
     if not patient:
+        flash('Patient not found.', 'danger')
         return redirect(url_for('list_patients'))
-    return render_template('edit_patient.html', patient=patient)
+        
+    # It renders your existing registration form in "edit mode"
+    return render_template('register_patient.html', patient=patient, is_editing=True)
 
-@app.route('/patient/<int:patient_id>/delete', methods=['POST'])
-@login_required
-@admin_required
-def delete_patient(patient_id):
-    db = get_db()
-    cursor = db.cursor()
-    try:
-        cursor.execute("DELETE FROM Patient WHERE id = %s", (patient_id,))
-        db.commit()
-        flash('Patient and all related records have been deleted.', 'success')
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error deleting patient {patient_id}: {e}")
-        flash('An error occurred while trying to delete the patient.', 'danger')
-    finally:
-        cursor.close()
-    return redirect(url_for('list_patients'))
+
 
 @app.route('/patient/<int:patient_id>/upload_image', methods=['POST'])
 @login_required
@@ -863,9 +834,9 @@ def add_follow_up_visit(patient_id):
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(sql, (
-                patient_id, session['user_id'], request.form['visit_date'],
+                patient_id, session['user_id'], date.today(),
                 request.form.get('complaints'), request.form.get('examination_findings'),
-                request.form.get('diagnosis'), request.form.get('treatment_plan'),
+                request.form.get('diagnosis'), request.form.get('updated_treatment_plan'),
                 request.form.get('notes')
             ))
             db.commit()
@@ -1186,93 +1157,67 @@ def weekly_registrations():
     
 # app.py
 
+# In app.py
+
 @app.route('/api/user_activity/<int:user_id>')
 @login_required
 @admin_required
 def get_user_activity(user_id):
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
     all_activities = []
 
     try:
-        # Check if the registered_by_doctor_id column exists
+        # --- The existing queries for patient activities remain the same ---
+        # Patient Registrations
         cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='patient' AND column_name='registered_by_doctor_id'
-        """)
-        has_registered_by_column = cursor.fetchone() is not None
-        
-        if has_registered_by_column:
-            # Patient Registrations (if column exists)
-            cursor.execute("""
-                SELECT 
-                    'Patient Registration' as type, 
-                    p.name, 
-                    p.id as patient_id, 
-                    p.date_of_registration::timestamp as activity_date -- FIX: Cast DATE to TIMESTAMP
-                FROM Patient p 
-                WHERE p.registered_by_doctor_id = %s
-                ORDER BY p.date_of_registration DESC
-            """, (user_id,))
-        else:
-            # Fallback: Show all patients if column doesn't exist
-            cursor.execute("""
-                SELECT 
-                    'Patient Registration' as type, 
-                    p.name, 
-                    p.id as patient_id, 
-                    p.date_of_registration::timestamp as activity_date -- FIX: Cast DATE to TIMESTAMP
-                FROM Patient p 
-                ORDER BY p.date_of_registration DESC
-                LIMIT 10
-            """)
-            
-        registrations = cursor.fetchall()
-        for reg in registrations:
-            all_activities.append(dict(reg))
+            SELECT 'Patient Registration' as type, p.name, p.id as patient_id, 
+                   p.date_of_registration::timestamp as activity_date 
+            FROM Patient p WHERE p.registered_by_doctor_id = %s
+        """, (user_id,))
+        for reg in cursor.fetchall(): all_activities.append(dict(reg))
 
         # Follow-up Visits
         cursor.execute("""
-            SELECT 
-                'Follow-up Visit' as type, 
-                p.name, 
-                p.id as patient_id, 
-                fv.visit_date::timestamp as activity_date -- FIX: Cast DATE to TIMESTAMP
-            FROM FollowUpVisit fv 
-            JOIN Patient p ON fv.patient_id = p.id
-            WHERE fv.doctor_id = %s
-            ORDER BY fv.visit_date DESC
+            SELECT 'Follow-up Visit' as type, p.name, p.id as patient_id, 
+                   fv.visit_date::timestamp as activity_date 
+            FROM FollowUpVisit fv JOIN Patient p ON fv.patient_id = p.id WHERE fv.doctor_id = %s
         """, (user_id,))
-        followups = cursor.fetchall()
-        for followup in followups:
-            all_activities.append(dict(followup))
+        for followup in cursor.fetchall(): all_activities.append(dict(followup))
 
-        # Prescriptions (This query is already correct as it uses a TIMESTAMP)
+        # Prescriptions
         cursor.execute("""
-            SELECT 
-                'Prescription Created' as type, 
-                p.name, 
-                p.id as patient_id, 
-                pr.prescription_date as activity_date 
-            FROM Prescription pr
-            JOIN Patient p ON pr.patient_id = p.id
-            WHERE pr.doctor_id = %s
-            ORDER BY pr.prescription_date DESC
+            SELECT 'Prescription Created' as type, p.name, p.id as patient_id, 
+                   pr.prescription_date as activity_date 
+            FROM Prescription pr JOIN Patient p ON pr.patient_id = p.id WHERE pr.doctor_id = %s
         """, (user_id,))
-        prescriptions = cursor.fetchall()
-        for prescription in prescriptions:
-            all_activities.append(dict(prescription))
+        for prescription in cursor.fetchall(): all_activities.append(dict(prescription))
+
+        # --- NEW: Query for Login and Logout Events ---
+        # Get all login times
+        cursor.execute("""
+            SELECT 'Login' as type, login_time as activity_date 
+            FROM UserActivityLog WHERE user_id = %s
+        """, (user_id,))
+        for login in cursor.fetchall():
+            all_activities.append({'type': 'Login', 'name': 'System Access', 'patient_id': None, 'activity_date': login['activity_date']})
+
+        # Get all logout times
+        cursor.execute("""
+            SELECT 'Logout' as type, logout_time as activity_date 
+            FROM UserActivityLog WHERE user_id = %s AND logout_time IS NOT NULL
+        """, (user_id,))
+        for logout in cursor.fetchall():
+            all_activities.append({'type': 'Logout', 'name': 'System Access', 'patient_id': None, 'activity_date': logout['activity_date']})
+        # --- END NEW SECTION ---
         
     except Exception as e:
         logging.error(f"Error fetching user activity for user {user_id}: {e}")
         return jsonify({"error": "Failed to fetch user activity"}), 500
-        
     finally:
         cursor.close()
 
-    # Sort all activities by date (newest first)
+    # Sort all activities together by date (newest first)
     all_activities.sort(key=lambda x: x['activity_date'], reverse=True)
     
     return jsonify(all_activities)
@@ -1485,86 +1430,11 @@ def diagnostic_center_upload():
 
 # In app.py, replace your existing delete_images function with this corrected version.
 
-@app.route('/image/<int:image_id>/delete', methods=['POST'])
-@login_required
-def delete_image(image_id):
-    db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    try:
-        # First, get the image details from the DB to find the filename and patient_id
-        cursor.execute("SELECT image_filename, patient_id FROM PatientImage WHERE id = %s", (image_id,))
-        image = cursor.fetchone()
 
-        if image:
-            patient_id_for_redirect = image['patient_id']
-            file_to_delete = os.path.join(app.config['UPLOAD_FOLDER'], image['image_filename'])
-
-            # Delete the database record
-            cursor.execute("DELETE FROM PatientImage WHERE id = %s", (image_id,))
-            db.commit()
-
-            # Try to delete the actual file from the server
-            if os.path.exists(file_to_delete):
-                os.remove(file_to_delete)
-            
-            flash('Image deleted successfully.', 'success')
-            return redirect(url_for('patient_detail', patient_id=patient_id_for_redirect))
-
-        else:
-            flash('Image not found.', 'danger')
-            return redirect(request.referrer or url_for('list_patients'))
-
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error deleting image {image_id}: {e}")
-        flash('An error occurred while deleting the image.', 'danger')
-        return redirect(request.referrer or url_for('list_patients'))
-    finally:
-        cursor.close()   
 
 # --- ADD THIS NEW FUNCTION to app.py ---
 
-@app.route('/images/delete', methods=['POST'])
-@login_required
-def delete_images():
-    """Handles bulk deletion of images from the diagnostic center."""
-    image_ids = request.form.getlist('image_ids')
-    if not image_ids:
-        flash('No images selected for deletion.', 'warning')
-        return redirect(url_for('diagnostic_center'))
 
-    db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    deleted_count = 0
-    try:
-        for image_id in image_ids:
-            # Get image details to find the filename for deletion
-            cursor.execute("SELECT image_filename FROM PatientImage WHERE id = %s", (image_id,))
-            image = cursor.fetchone()
-            if image and image['image_filename']:
-                file_to_delete = os.path.join(app.config['UPLOAD_FOLDER'], image['image_filename'])
-                
-                # 1. Delete the database record
-                cursor.execute("DELETE FROM PatientImage WHERE id = %s", (image_id,))
-                
-                # 2. Try to delete the actual file from the server
-                if os.path.exists(file_to_delete):
-                    os.remove(file_to_delete)
-                
-                deleted_count += 1
-        
-        db.commit()
-        if deleted_count > 0:
-            flash(f'{deleted_count} image(s) deleted successfully.', 'success')
-
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error during bulk image deletion: {e}")
-        flash('An error occurred while deleting the images.', 'danger')
-    finally:
-        cursor.close()
-    
-    return redirect(url_for('diagnostic_center'))
 
 @app.route('/patients/download')
 @login_required
@@ -1663,44 +1533,7 @@ def download_patient_data():
 
 # --- ADD THIS NEW FUNCTION to app.py ---
 
-@app.route('/prescription/<int:prescription_id>/delete', methods=['POST'])
-@login_required  # Good practice to restrict deletion to admins
-def delete_prescription(prescription_id):
-    db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    try:
-        # First, find the patient_id so we can redirect back to the correct page
-        cursor.execute("SELECT patient_id FROM Prescription WHERE id = %s", (prescription_id,))
-        prescription = cursor.fetchone()
-        if not prescription:
-            flash('Prescription not found.', 'danger')
-            return redirect(url_for('list_patients'))
-        
-        patient_id = prescription['patient_id']
 
-        # IMPORTANT: Delete items from the child table (PrescriptionItem) first
-        # to avoid foreign key constraint errors.
-        cursor.execute("DELETE FROM PrescriptionItem WHERE prescription_id = %s", (prescription_id,))
-        
-        # Now, delete the main record from the parent table (Prescription)
-        cursor.execute("DELETE FROM Prescription WHERE id = %s", (prescription_id,))
-        
-        db.commit()
-        flash('Prescription has been successfully deleted.', 'success')
-        
-        # Redirect back to the patient's detail page
-        return redirect(url_for('patient_detail', patient_id=patient_id))
-
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error deleting prescription {prescription_id}: {e}")
-        flash('An error occurred while trying to delete the prescription.', 'danger')
-        # If an error occurs, try to redirect back to the last known page or a default page
-        if 'patient_id' in locals():
-             return redirect(url_for('patient_detail', patient_id=patient_id))
-        return redirect(url_for('list_patients'))
-    finally:
-        cursor.close()
 
 # --- ADD THIS NEW FUNCTION to app.py ---
 
@@ -1943,12 +1776,12 @@ def mobile_upload(patient_id):
 
 
 # --- NEW: API for Patient Search with Visit Count ---
-@app.route('/api/search_patients')
+@app.route('/api/search_existing_patients')
 @login_required
 def search_patients():
     """
-    API endpoint for live search in the follow-up form.
-    Returns patient data including their total number of past follow-up visits.
+    API endpoint that ONLY searches the local 'Patient' table
+    to find existing patients that can be edited.
     """
     query = request.args.get('q', '')
     if len(query) < 2:
@@ -1958,17 +1791,12 @@ def search_patients():
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
     sql = """
-        SELECT 
-            p.id, 
-            p.patient_code, 
-            p.name, 
-            COUNT(fv.id) as visit_count
-        FROM Patient p
-        LEFT JOIN FollowUpVisit fv ON p.id = fv.patient_id
-        WHERE p.name ILIKE %s OR p.patient_code ILIKE %s
-        GROUP BY p.id, p.patient_code, p.name
-        ORDER BY p.name
+        SELECT id, patient_code, name 
+        FROM Patient
+        WHERE name ILIKE %s OR patient_code ILIKE %s
+        ORDER BY name
         LIMIT 10;
+        
     """
     search_term = f"%{query}%"
     cursor.execute(sql, (search_term, search_term))
@@ -1977,110 +1805,9 @@ def search_patients():
     
     return jsonify(patients)
 
-# --- REPLACE the old search_external_uhid function with this NEW version ---
 
-@app.route('/api/external/search_uhid')
-@login_required
-def search_external_uhid():
-    """
-    Simulated API endpoint that mimics the new receptionist form (patient_entry.html).
-    - Temperature is now kept in Fahrenheit (°F) as requested.
-    - It consolidates lifestyle/history fields into a single 'past_medical_history' block.
-    - It calculates an approximate DOB from the provided age.
-    """
-    query = request.args.get('q', '').lower()
-    if len(query) < 2:
-        return jsonify([])
 
-    # --- DUMMY DATA based on patient_entry.html ---
-    reception_patients = [
-        {
-            'uhid': 'R-2025-001', 'name': 'Aditya Sharma', 'age': 45, 'gender': 'Male',
-            'phone_number': '9988776655', 'email': 'aditya.s@example.com', 'address': '123 Jubilee Hills, Hyderabad',
-            'temp_f': 98.6, 'bp_sys': 130, 'bp_dia': 85, 'sugar': 140, 'height': 170, 'weight': 78,
-            'smoking_status': 'Former', 'alcohol_frequency': 'Occasional', 'physical_activity': '1-2 days',
-            'chronic_conditions': 'Hypertension (HTN)', 'current_medications': 'Telmisartan 40mg', 'allergies': 'None'
-        },
-        {
-            'uhid': 'R-2025-002', 'name': 'Priya Singh', 'age': 32, 'gender': 'Female',
-            'phone_number': '9122334455', 'email': 'priya.s@example.com', 'address': '456 Gachibowli, Hyderabad',
-            'temp_f': 99.1, 'bp_sys': 115, 'bp_dia': 75, 'sugar': 95, 'height': 160, 'weight': 62,
-            'smoking_status': 'Never', 'alcohol_frequency': 'None', 'physical_activity': '3-4 days',
-            'chronic_conditions': 'None', 'current_medications': 'Multivitamins', 'allergies': 'Penicillin'
-        }
-    ]
-    # --- END DUMMY DATA ---
 
-    results = []
-    for p in reception_patients:
-        if query in p['name'].lower() or query in p['uhid'].lower():
-            # Consolidate history and lifestyle fields
-            history_summary = (
-                f"--- Past History ---\n"
-                f"Chronic Conditions: {p.get('chronic_conditions', 'N/A')}\n"
-                f"Current Medications: {p.get('current_medications', 'N/A')}\n"
-                f"Allergies: {p.get('allergies', 'N/A')}\n\n"
-                f"--- Lifestyle ---\n"
-                f"Smoking: {p.get('smoking_status', 'N/A')}\n"
-                f"Alcohol: {p.get('alcohol_frequency', 'N/A')}\n"
-                f"Physical Activity: {p.get('physical_activity', 'N/A')} per week"
-            )
-
-            # Calculate an approximate Date of Birth from age
-            from datetime import date, timedelta
-            today = date.today()
-            approx_dob = (today - timedelta(days=p.get('age', 0) * 365.25)).strftime('%Y-%m-%d')
-
-            results.append({
-                'uhid': p.get('uhid'),
-                'name': p.get('name'),
-                'dob': approx_dob,
-                'gender': p.get('gender'),
-                'phone_number': p.get('phone_number'),
-                'email': p.get('email'),
-                'address': p.get('address'),
-                'temp': p.get('temp_f'), # MODIFICATION: Sending Fahrenheit directly
-                'bp_sys': p.get('bp_sys'),
-                'bp_dia': p.get('bp_dia'),
-                'sugar': p.get('sugar'),
-                'height': p.get('height'),
-                'weight': p.get('weight'),
-                'past_medical_history': history_summary
-            })
-
-    return jsonify(results)
-
-# --- ADD the @admin_required decorator to this function ---
-
-@app.route('/lab_report/<int:report_id>/delete', methods=['POST'])
-@login_required
-@admin_required  # <-- ADD THIS LINE
-def delete_lab_report(report_id):
-    db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    try:
-        # ... rest of the function remains the same
-        cursor.execute("SELECT patient_id FROM LabReport WHERE id = %s", (report_id,))
-        report = cursor.fetchone()
-        if not report:
-            flash('Lab report not found.', 'danger')
-            return redirect(url_for('list_patients'))
-
-        patient_id = report['patient_id']
-        cursor.execute("DELETE FROM LabReport WHERE id = %s", (report_id,))
-        db.commit()
-        flash('Lab report has been successfully deleted.', 'success')
-        return redirect(url_for('patient_detail', patient_id=patient_id))
-
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error deleting lab report {report_id}: {e}")
-        flash('An error occurred while trying to delete the lab report.', 'danger')
-        if 'patient_id' in locals():
-             return redirect(url_for('patient_detail', patient_id=patient_id))
-        return redirect(url_for('list_lab_reports'))
-    finally:
-        cursor.close()
 
 # --- NEW: Route for Standalone Follow-up Visit Form ---
 @app.route('/patient_visit', methods=['GET', 'POST'])
