@@ -5,14 +5,14 @@ import os
 
 # --- IMPORTANT ---
 # Set your PostgreSQL connection details here.
-DB_NAME = "dermatology_db"
+DB_NAME = "postgres"
 DB_USER = "postgres" 
-DB_PASSWORD = "Noor@818" # Change this to your password
-DB_HOST = "localhost"
+DB_PASSWORD = "JpnE0HopPAcKwZIP" # Change this to your password
+DB_HOST = "db.vlufplbgthtxntlismdx.supabase.co"
 DB_PORT = "5432"
 
 # Connection string for the default 'postgres' database
-conn_string_default = f"dbname='postgres' user='{DB_USER}' host='{DB_HOST}' password='{DB_PASSWORD}' port='{DB_PORT}' sslmode='disable'"
+conn_string_default = f"dbname='postgres' user='{DB_USER}' host='{DB_HOST}' password='{DB_PASSWORD}' port='{DB_PORT}' sslmode='require'"
 
 try:
     # --- Step 1: Connect to the default database to create our new one ---
@@ -33,7 +33,7 @@ try:
     conn.close()
 
     # --- Step 2: Connect to the new database to create tables ---
-    conn_string_new_db = f"dbname='{DB_NAME}' user='{DB_USER}' host='{DB_HOST}' password='{DB_PASSWORD}' port='{DB_PORT}' sslmode='disable'"
+    conn_string_new_db = f"dbname='{DB_NAME}' user='{DB_USER}' host='{DB_HOST}' password='{DB_PASSWORD}' port='{DB_PORT}' sslmode='require'"
     conn = psycopg2.connect(conn_string_new_db)
     cursor = conn.cursor()
 

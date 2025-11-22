@@ -43,9 +43,14 @@ app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
 logging.basicConfig(level=logging.INFO)
 
 DB_CONFIG = {
-    'dbname': 'dermatology_db', 'user': 'postgres', 'password': 'Noor@818',
-    'host': 'localhost', 'port': '5432', 'sslmode': 'disable'
+    'dbname': 'postgres',
+    'user': 'postgres',
+    'password': 'JpnE0HopPAcKwZIP',
+    'host': 'db.vlufplbgthtxntlismdx.supabase.co',
+    'port': '5432',
+    'sslmode': 'require'
 }
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
