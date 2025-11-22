@@ -33,6 +33,15 @@ RADIOLOGY_API_HOST = "http://127.0.0.1:5000"
 # if not os.path.exists(app.config['UPLOAD_FOLDER']):
 #     os.makedirs(app.config['UPLOAD_FOLDER'])
 
+import ssl
+
+def get_db():
+    if 'db' not in g:
+        ssl_context = ssl.create_default_context()
+        g.db = psycopg2.connect(**DB_CONFIG, sslmode='require', ssl=ssl_context)
+    return g.db
+
+
 import tempfile
 
 # Use temporary writable directory on Vercel
