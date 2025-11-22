@@ -27,11 +27,18 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'dcm'}
 
 RADIOLOGY_API_HOST = "http://127.0.0.1:5000"
-if not os.path.exists("downloads"):
-    os.makedirs("downloads")
+# if not os.path.exists("downloads"):
+#     os.makedirs("downloads")
 
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+# if not os.path.exists(app.config['UPLOAD_FOLDER']):
+#     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+import tempfile
+
+# Use temporary writable directory on Vercel
+DOWNLOAD_FOLDER = tempfile.gettempdir()
+app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
+
 
 logging.basicConfig(level=logging.INFO)
 
