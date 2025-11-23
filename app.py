@@ -35,13 +35,13 @@ DB_CONFIG = {
     'password': 'JpnE0HopPAcKwZIP',
     'host': 'db.vlufplbgthtxntlismdx.supabase.co',
     'port': '5432',
-    
+    'sslmode': 'require'
 }
 
 def get_db():
     if 'db' not in g:
         ssl_context = ssl.create_default_context()
-        g.db = psycopg2.connect(**DB_CONFIG, sslmode='require', ssl=ssl_context)
+        g.db = psycopg2.connect(**DB_CONFIG, sslmode='require')
     return g.db
 
 
