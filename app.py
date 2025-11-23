@@ -88,11 +88,7 @@ TEST_CATEGORIES = {
 }
 
 
-# --- Database Connection ---
-# def get_db():
-#     if 'db' not in g:
-#         g.db = psycopg2.connect(**DB_CONFIG)
-#     return g.db
+
 
 @app.teardown_appcontext
 def close_db(error):
