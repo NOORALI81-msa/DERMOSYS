@@ -17,8 +17,7 @@ from flask import (Flask, render_template, request, redirect, url_for, g,
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from radiology_api import radiology_bp, perform_radiology_request
-from lab_api import lab_bp
+
 
 # --- App Configuration & Setup ---
 app = Flask(__name__)
@@ -27,13 +26,17 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'dcm'}
 
 RADIOLOGY_API_HOST = "http://127.0.0.1:5000"
-# if not os.path.exists("downloads"):
-#     os.makedirs("downloads")
-
-# if not os.path.exists(app.config['UPLOAD_FOLDER']):
-#     os.makedirs(app.config['UPLOAD_FOLDER'])
 
 import ssl
+
+DB_CONFIG = {
+    'dbname': 'postgres',
+    'user': 'postgres',
+    'password': 'JpnE0HopPAcKwZIP',
+    'host': 'db.vlufplbgthtxntlismdx.supabase.co',
+    'port': '5432',
+    
+}
 
 def get_db():
     if 'db' not in g:
@@ -51,14 +54,7 @@ app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
 
 logging.basicConfig(level=logging.INFO)
 
-DB_CONFIG = {
-    'dbname': 'postgres',
-    'user': 'postgres',
-    'password': 'JpnE0HopPAcKwZIP',
-    'host': 'db.vlufplbgthtxntlismdx.supabase.co',
-    'port': '5432',
-    
-}
+
 
 
 def allowed_file(filename):
@@ -1822,10 +1818,6 @@ def search_patients():
     
     return jsonify(patients)
 
-
-
-
-
 # --- NEW: Route for Standalone Follow-up Visit Form ---
 @app.route('/patient_visit', methods=['GET', 'POST'])
 @login_required
@@ -1877,6 +1869,8 @@ def request_investigation_form():
     """Renders the standalone investigation request page."""
     return render_template('request_lab_report.html')
 
+from radiology_api import radiology_bp, perform_radiology_request
+from lab_api import lab_bp
 
 app.register_blueprint(radiology_bp, url_prefix='/api/radiology')
 app.register_blueprint(lab_bp, url_prefix='/api/lab')
