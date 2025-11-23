@@ -1,2 +1,7 @@
 init_db.py
+__pycache__/
+*.pyc
+ngrok
 ngrok.exe
+ngrok.yml
+ngrok.py
