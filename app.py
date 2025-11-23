@@ -1869,7 +1869,7 @@ def request_investigation_form():
     """Renders the standalone investigation request page."""
     return render_template('request_lab_report.html')
 
-from radiology_api import radiology_bp, perform_radiology_request
+from radiology_api import radiology_bp
 from lab_api import lab_bp
 
 app.register_blueprint(radiology_bp, url_prefix='/api/radiology')
