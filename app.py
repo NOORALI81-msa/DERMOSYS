@@ -57,7 +57,7 @@ DB_CONFIG = {
     'password': 'JpnE0HopPAcKwZIP',
     'host': 'db.vlufplbgthtxntlismdx.supabase.co',
     'port': '5432',
-    'sslmode': 'require'
+    
 }
 
 
