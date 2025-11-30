@@ -30,19 +30,20 @@ RADIOLOGY_API_HOST = "http://127.0.0.1:5000"
 import ssl
 
 DB_CONFIG = {
-    'dbname': 'postgres',
-    'user': 'postgres',
-    'password': 'JpnE0HopPAcKwZIP',
-    'host': 'db.vlufplbgthtxntlismdx.supabase.co',
-    'port': '5432',
-    'sslmode': 'require'
+    "dbname": os.environ.get("DB_NAME"),
+    "user": os.environ.get("DB_USER"),
+    "password": os.environ.get("DB_PASSWORD"),
+    "host": os.environ.get("DB_HOST"),
+    "port": os.environ.get("DB_PORT"),
+    "sslmode": os.environ.get("DB_SSLMODE"),
 }
 
+
 def get_db():
-    if 'db' not in g:
-        ssl_context = ssl.create_default_context()
-        g.db = psycopg2.connect(**DB_CONFIG, sslmode='require')
+    if "db" not in g:
+        g.db = psycopg2.connect(**DB_CONFIG)
     return g.db
+
 
 
 import tempfile
@@ -135,38 +136,71 @@ def request_investigation(patient_id):
         if not all([uhid, scan_type, body_part]):
             flash("Missing fields for radiology scan request.", "danger")
             return redirect(url_for('patient_detail', patient_id=patient_id))
-        
-        # Call the function from the radiology_api.py blueprint
-        filename, error = perform_radiology_request(db_conn, patient_id, uhid, scan_type, body_part)
-        
+
+        # ---- NEW ERROR HANDLING (replacing perform_radiology_request) ----
+        try:
+            from radiology_api import download_scan
+
+            filename = download_scan(
+                db_conn,
+                RADIOLOGY_API_HOST,
+                uhid,          # scan_id
+                patient_id,
+                scan_type,
+                body_part
+            )
+
+            if not filename:
+                error = "Scan not available or radiology server not reachable."
+            else:
+                error = None
+
+        except Exception as e:
+            db_conn.rollback()
+            error = f"Unexpected error: {str(e)}"
+            filename = None
+
+        # ---- YOUR EXACT FLASH MESSAGES ----
         if error:
             flash(f"Radiology request failed: {error}", "danger")
         else:
-            flash(f"Radiology scan '{filename}' successfully requested and added to patient gallery.", "success")
+            flash(
+                f"Radiology scan '{filename}' successfully requested and added to patient gallery.",
+                "success"
+            )
 
     # --- Section for handling Lab requests ---
     elif request_type == 'lab':
-        # Get a list of tests from checkboxes, not a single text field
         requested_tests = request.form.getlist('lab_tests')
         department = request.form.get('lab_department', 'Pathology')
 
-        # Check if the list is empty
         if not requested_tests:
             flash("You must select at least one lab test.", "danger")
             return redirect(url_for('patient_detail', patient_id=patient_id))
-        
+
         try:
             with db_conn.cursor() as cursor:
-                # Loop through the selected tests and create a record for each one
                 for test_name in requested_tests:
-                    sql = "INSERT INTO LabReport (patient_id, requested_by_doctor_id, report_type, department, report_date, status) VALUES (%s, %s, %s, %s, %s, 'Pending')"
-                    cursor.execute(sql, (patient_id, session['user_id'], test_name, department, date.today()))
+                    sql = """
+                        INSERT INTO LabReport
+                        (patient_id, requested_by_doctor_id, report_type, department, report_date, status)
+                        VALUES (%s, %s, %s, %s, %s, 'Pending')
+                    """
+                    cursor.execute(sql, (
+                        patient_id,
+                        session['user_id'],
+                        test_name,
+                        department,
+                        date.today()
+                    ))
                 db_conn.commit()
-            flash(f"Lab tests requested successfully.", 'success')
+
+            flash("Lab tests requested successfully.", 'success')
+
         except Exception as e:
             db_conn.rollback()
             flash(f"Database error requesting lab test: {e}", "danger")
-    
+
     # --- Fallback for invalid request types ---
     else:
         flash("Invalid request type submitted.", "warning")
