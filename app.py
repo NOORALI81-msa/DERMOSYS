@@ -206,7 +206,7 @@ def request_investigation(patient_id):
 def login():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT COUNT(id) FROM Users")
+    cursor.execute("SELECT COUNT(id) FROM users")
     user_count = cursor.fetchone()[0]
     
     if user_count == 0:
@@ -217,7 +217,7 @@ def login():
         username = request.form['username'].strip()
         password = request.form['password'].strip()
         cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute('SELECT * FROM Users WHERE username = %s', (username,))
+        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
         user = cursor.fetchone()
         cursor.close()
         if user and check_password_hash(user['password_hash'], password):
@@ -264,7 +264,7 @@ def logout():
 def register():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT COUNT(id) FROM Users")
+    cursor.execute("SELECT COUNT(id) FROM users")
     user_count = cursor.fetchone()[0]
     
     if user_count > 0 and 'user_id' not in session:
@@ -277,7 +277,7 @@ def register():
         
         try:
             hashed_password = generate_password_hash(password)
-            cursor.execute('INSERT INTO Users (username, password_hash, role_id) VALUES (%s, %s, %s)',
+            cursor.execute('INSERT INTO users (username, password_hash, role_id) VALUES (%s, %s, %s)',
                            (username, hashed_password, role_id))
             db.commit()
             flash('Administrator account created successfully! Please log in.', 'success')
@@ -302,7 +302,7 @@ def register_user():
         db = get_db()
         cursor = db.cursor()
         try:
-            cursor.execute('INSERT INTO Users (username, password_hash, role_id) VALUES (%s, %s, %s)',
+            cursor.execute('INSERT INTO users (username, password_hash, role_id) VALUES (%s, %s, %s)',
                            (username, generate_password_hash(password), role_id))
             db.commit()
             flash('User created successfully!', 'success')
@@ -327,12 +327,12 @@ def forgot_password():
 
         db = get_db()
         cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute("SELECT id FROM Users WHERE username = %s", (username,))
+        cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
 
         if user:
             hashed_password = generate_password_hash(new_password)
-            cursor.execute("UPDATE Users SET password_hash = %s WHERE id = %s", (hashed_password, user['id']))
+            cursor.execute("UPDATE users SET password_hash = %s WHERE id = %s", (hashed_password, user['id']))
             db.commit()
             flash('Password has been reset successfully. Please log in.', 'success')
             cursor.close()
@@ -448,7 +448,7 @@ def dashboard():
                         COALESCE(log.logout_time, NOW()) - log.login_time
                     ))
                 ), 0) as active_seconds_today
-            FROM Users u
+            FROM users u
             JOIN Roles r ON u.role_id = r.id
             LEFT JOIN UserActivityLog log ON u.id = log.user_id AND log.login_time::date = CURRENT_DATE
             GROUP BY u.id, r.name
@@ -712,7 +712,7 @@ def patient_detail(patient_id):
         if current_admission:
             cursor.execute("""
                 SELECT dpn.*, u.username as doctor_name
-                FROM DailyProgressNote dpn JOIN Users u ON dpn.doctor_id = u.id
+                FROM DailyProgressNote dpn JOIN users u ON dpn.doctor_id = u.id
                 WHERE dpn.assignment_id = %s ORDER BY dpn.note_date DESC
             """, (current_admission['id'],))
             daily_notes = cursor.fetchall()
@@ -728,10 +728,10 @@ def patient_detail(patient_id):
     admission_history = cursor.fetchall()
     
     # Fetch other patient details as before
-    cursor.execute("SELECT fv.*, u.username as doctor_name FROM FollowUpVisit fv JOIN Users u ON fv.doctor_id = u.id WHERE fv.patient_id = %s ORDER BY fv.visit_date DESC", (patient_id,))
+    cursor.execute("SELECT fv.*, u.username as doctor_name FROM FollowUpVisit fv JOIN users u ON fv.doctor_id = u.id WHERE fv.patient_id = %s ORDER BY fv.visit_date DESC", (patient_id,))
     followup_visits = cursor.fetchall()
     
-    cursor.execute("SELECT p.*, u.username as doctor_name FROM Prescription p JOIN Users u ON p.doctor_id = u.id WHERE p.patient_id = %s ORDER BY p.prescription_date DESC", (patient_id,))
+    cursor.execute("SELECT p.*, u.username as doctor_name FROM Prescription p JOIN users u ON p.doctor_id = u.id WHERE p.patient_id = %s ORDER BY p.prescription_date DESC", (patient_id,))
     prescriptions_raw = cursor.fetchall()
     prescriptions_with_items = []
     for p in prescriptions_raw:
@@ -901,7 +901,7 @@ def list_follow_up_visits():
         SELECT fv.*, p.name as patient_name, p.patient_code, u.username as doctor_name
         FROM FollowUpVisit fv
         JOIN Patient p ON fv.patient_id = p.id
-        JOIN Users u ON fv.doctor_id = u.id
+        JOIN users u ON fv.doctor_id = u.id
         ORDER BY fv.visit_date DESC
     """)
     visits = cursor.fetchall()
@@ -960,7 +960,7 @@ def print_prescription(prescription_id):
         SELECT pr.*, p.name as patient_name, p.patient_code, p.dob, p.gender, u.username as doctor_name
         FROM Prescription pr
         JOIN Patient p ON pr.patient_id = p.id
-        JOIN Users u ON pr.doctor_id = u.id
+        JOIN users u ON pr.doctor_id = u.id
         WHERE pr.id = %s
     """, (prescription_id,))
     prescription = cursor.fetchone()
@@ -986,7 +986,7 @@ def list_lab_reports():
         SELECT lr.*, p.name as patient_name, p.patient_code, u.username as doctor_name
         FROM LabReport lr
         JOIN Patient p ON lr.patient_id = p.id
-        LEFT JOIN Users u ON lr.requested_by_doctor_id = u.id
+        LEFT JOIN users u ON lr.requested_by_doctor_id = u.id
         ORDER BY lr.department, lr.report_date DESC
     """)
     reports_list = cursor.fetchall()
@@ -1151,11 +1151,11 @@ def assign_bed(bed_id):
 def toggle_user_status(user_id):
     db = get_db()
     cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT is_active FROM Users WHERE id = %s", (user_id,))
+    cursor.execute("SELECT is_active FROM users WHERE id = %s", (user_id,))
     user = cursor.fetchone()
     if user:
         new_status = not user['is_active']
-        cursor.execute("UPDATE Users SET is_active = %s WHERE id = %s", (new_status, user_id))
+        cursor.execute("UPDATE users SET is_active = %s WHERE id = %s", (new_status, user_id))
         db.commit()
         flash(f"User status updated to {'Active' if new_status else 'Inactive'}.", 'success')
     else:
@@ -1635,7 +1635,7 @@ def discharge_patient(assignment_id):
     cursor.execute("""
         SELECT dpn.notes, dpn.note_date, u.username as doctor_name
         FROM DailyProgressNote dpn
-        JOIN Users u ON dpn.doctor_id = u.id
+        JOIN users u ON dpn.doctor_id = u.id
         WHERE dpn.assignment_id = %s
         ORDER BY dpn.note_date ASC
     """, (assignment_id,))
