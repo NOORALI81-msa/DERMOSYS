@@ -16,7 +16,7 @@ from flask import (Flask, render_template, request, redirect, url_for, g,
                    flash, session, jsonify, send_from_directory, make_response)
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-
+from urllib.parse import urlparse
 
 
 # --- App Configuration & Setup ---
@@ -27,21 +27,15 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'dcm'}
 
 RADIOLOGY_API_HOST = "http://127.0.0.1:5000"
 
-import ssl
 
-DB_CONFIG = {
-    "dbname": os.environ.get("DB_NAME"),
-    "user": os.environ.get("DB_USER"),
-    "password": os.environ.get("DB_PASSWORD"),
-    "host": os.environ.get("DB_HOST"),
-    "port": os.environ.get("DB_PORT"),
-    "sslmode": os.environ.get("DB_SSLMODE"),
-}
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set in Render environment")
 
 def get_db():
     if "db" not in g:
-        g.db = psycopg2.connect(**DB_CONFIG)
+        g.db = psycopg2.connect(DATABASE_URL, sslmode="require")
     return g.db
 
 
