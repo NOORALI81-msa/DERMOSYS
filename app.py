@@ -8,7 +8,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
 import os
-import sqlite3
 from collections import Counter, defaultdict
 import io
 import csv
@@ -308,7 +307,7 @@ def register_patient():
 @login_required
 def list_patients():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     query = "SELECT * FROM Patient"
     filters = []
     params = []
@@ -456,7 +455,7 @@ def patient_visit():
 @login_required
 def patient_detail(patient_id):
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     
     # Fetch patient details
     cursor.execute("SELECT p.*, u.username as doctor_name FROM Patient p LEFT JOIN Users u ON p.registered_by_doctor_id = u.id WHERE p.id = %s", (patient_id,))
@@ -545,7 +544,7 @@ def edit_followup_visit(visit_id):
     complaints = request.form['complaints']
     examination = request.form['examination_findings']
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT patient_id FROM FollowUpVisit WHERE id = %s", (visit_id,))
     visit = cursor.fetchone()
     if not visit:
@@ -562,7 +561,7 @@ def edit_followup_visit(visit_id):
 @login_required
 def delete_visit(visit_id):
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT patient_id FROM FollowUpVisit WHERE id = %s", (visit_id,))
     visit = cursor.fetchone()
     if visit:
@@ -597,7 +596,7 @@ def add_image(patient_id):
 @login_required
 def delete_image(image_id):
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT patient_id, image_filename FROM PatientImage WHERE id = %s", (image_id,))
     image_data = cursor.fetchone()
     if image_data:
@@ -624,7 +623,7 @@ def uploaded_file(filename):
 @app.route('/upload_mobile/<int:patient_id>', methods=['GET', 'POST'])
 def mobile_upload(patient_id):
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT name FROM Patient WHERE id = %s", (patient_id,))
     patient = cursor.fetchone()
     if not patient:
@@ -650,7 +649,7 @@ def mobile_upload(patient_id):
 @login_required
 def list_lab_reports():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     # Corrected the query to ORDER BY lr.department
     cursor.execute("""
         SELECT lr.*, p.name as patient_name, p.patient_code, u.username as doctor_name 
@@ -673,7 +672,7 @@ def list_lab_reports():
 @login_required
 def request_lab_report():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     
     # Define the structured list of departments with groups
     departments = {
@@ -724,7 +723,7 @@ def upload_lab_report(report_id):
 @login_required
 def bed_management():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT b.id, b.bed_number, b.status, p.name as patient_name, p.patient_code, ba.id as assignment_id, ba.admission_date FROM Bed b LEFT JOIN (SELECT * FROM BedAssignment WHERE discharge_date IS NULL) ba ON b.id = ba.bed_id LEFT JOIN Patient p ON ba.patient_id = p.id ORDER BY b.bed_number")
     beds = cursor.fetchall()
     cursor.execute("SELECT id, patient_code, name FROM Patient WHERE is_admitted = FALSE ORDER BY name")
@@ -795,7 +794,7 @@ def assign_bed(bed_id):
 @login_required
 def discharge_patient(assignment_id):
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT ba.id, ba.patient_id, p.name, p.patient_code, p.diagnosis FROM BedAssignment ba JOIN Patient p ON ba.patient_id = p.id WHERE ba.id = %s", (assignment_id,))
     assignment_details = cursor.fetchone()
     if request.method == 'POST':
@@ -829,7 +828,7 @@ def add_daily_note(assignment_id):
 @login_required
 def list_consultations():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT cr.*, p.name as patient_name, p.patient_code, u.username as doctor_name FROM ConsultationRequest cr JOIN Patient p ON cr.patient_id = p.id JOIN Users u ON cr.requesting_doctor_id = u.id ORDER BY cr.request_date DESC")
     requests = cursor.fetchall()
     cursor.close()
@@ -839,7 +838,7 @@ def list_consultations():
 @login_required
 def request_consultation():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     
     # Define a structured list of departments for the form
     departments = {
@@ -876,7 +875,7 @@ def request_consultation():
 @login_required
 def create_prescription():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT id, patient_code, name FROM Patient ORDER BY name")
     patients = cursor.fetchall()
     cursor.execute("SELECT name FROM Medication ORDER BY name")
@@ -906,7 +905,7 @@ def create_prescription():
 def search_patients():
     query = request.args.get('q', '')
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     cursor.execute("SELECT id, patient_code, name, age, gender, mobile_number, diagnosis, initial_height, initial_weight, initial_bmi, initial_bsa, treatment_course_duration, (SELECT COUNT(id) FROM FollowUpVisit WHERE patient_id = p.id) as visit_count FROM Patient p WHERE LOWER(name) LIKE %s OR LOWER(patient_code) LIKE %s OR mobile_number LIKE %s LIMIT 10",
                    (f'%{query.lower()}%', f'%{query.lower()}%', f'%{query.lower()}%'))
     patients = cursor.fetchall()
@@ -918,7 +917,7 @@ def search_patients():
 @login_required
 def download_patient_data():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     
     # Reuse the same filtering logic from list_patients
     query = "SELECT patient_code, name, age, gender, mobile_number, date_of_registration, complaints, examination_findings, diagnosis, initial_treatment_plan FROM Patient"
@@ -984,7 +983,7 @@ def download_patient_data():
 @login_required
 def diagnostic_center():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     search_query = request.args.get('search', '')
     
     # Query for images uploaded as part of a lab report
@@ -1029,7 +1028,7 @@ def diagnostic_center():
 @login_required
 def list_follow_up_visits():
     db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = db.cursor()
     
     # SQL query to get all follow-up visits and join with patient and doctor info
     sql = """
