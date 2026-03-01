@@ -36,7 +36,7 @@ Before you begin, ensure you have the following installed on your system:
 
 1.  **Clone the Repository**
     ```bash
-    git clone <[your-repository-url](https://github.com/NOORALI81-msa/DERMOSYS.git)>
+    git clone <(https://github.com/NOORALI81-msa/DERMOSYS.git)>
     cd <dermatology>
     ```
 
@@ -57,22 +57,19 @@ Before you begin, ensure you have the following installed on your system:
     pip install -r requirements.txt
     ```
 
-4.  **Set Up the PostgreSQL Database**
-    - Open `pgAdmin` or `psql`.
-    - Create a new database named `dermatology_db`.
-    - Open `app.py` and `init_db.py` and update the `DB_CONFIG` dictionary with your PostgreSQL password.
 
-5.  **Initialize the Database**
-    Run the following command to create all the necessary tables. **Note: This will erase any existing data.**
-    ```bash
-    python init_db.py
-    ```
+4.  **Set Up the SQLite Database**
+    - Run the provided `init_db_sqlite.sql` script using the SQLite command line or a tool like DB Browser for SQLite:
+      ```bash
+      sqlite3 dermatology_db.sqlite3 < init_db_sqlite.sql
+      ```
 
 ## Running the Application
 
+
 1.  **Start the Flask Server**
     ```bash
-    python app.py or py app.py
+    python app.py
     ```
     The application will be available at `http://127.0.0.1:5001`.
 
