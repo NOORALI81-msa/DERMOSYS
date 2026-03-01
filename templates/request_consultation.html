@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
+    
+
 <div class="form-container">
     <h1>Request Consultation</h1>
-    <form method="POST" action="{{ url_for('request_consultation') }}">
+    <form method="POST">
         <div class="form-group">
             <label for="patient_id">Select Patient</label>
             <select name="patient_id" id="patient_id" class="form-control" required>

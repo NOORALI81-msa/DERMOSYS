@@ -21,13 +21,14 @@ def request_lab_test():
     db_conn = get_db()  # ⬅ USE CLOUD DB
 
     try:
-        with db_conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO LabReport (patient_id, requested_by_doctor_id, report_type,
-                                       department, report_date, status)
-                VALUES (%s, %s, %s, %s, %s, 'Pending')
-            """, (patient_id, session['user_id'], report_type, department, date.today()))
-            db_conn.commit()
+        cursor = db_conn.cursor()
+        cursor.execute("""
+            INSERT INTO LabReport (patient_id, requested_by_doctor_id, report_type,
+                                   department, report_date, status)
+            VALUES (?, ?, ?, ?, ?, 'Pending')
+        """, (patient_id, session['user_id'], report_type, department, date.today()))
+        db_conn.commit()
+        cursor.close()
         flash(f"Lab test '{report_type}' requested successfully.", 'success')
     except Exception as e:
         db_conn.rollback()

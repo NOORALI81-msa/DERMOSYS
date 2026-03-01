@@ -31,12 +31,13 @@ def download_scan(db_conn, host, scan_id, patient_id, scan_type, body_part):
             save_stream_to_file(r, out_path)
 
             notes = f"{scan_type.upper()} of {body_part.upper()}"
-            with db_conn.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO PatientImage (patient_id, image_filename, upload_date, notes)
-                    VALUES (%s, %s, %s, %s)
-                """, (patient_id, filename, datetime.now(), notes))
-                db_conn.commit()
+            cursor = db_conn.cursor()
+            cursor.execute("""
+                INSERT INTO PatientImage (patient_id, image_filename, upload_date, notes)
+                VALUES (?, ?, ?, ?)
+            """, (patient_id, filename, datetime.now(), notes))
+            db_conn.commit()
+            cursor.close()
             return filename
     except Exception as e:
         logging.error(f"Radiology Download Error: {e}")

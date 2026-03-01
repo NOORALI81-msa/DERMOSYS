@@ -1,66 +1,198 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    
+</style>
+
 <div class="form-container">
-    <h1>Patient Follow-up Visit</h1>
-    <form method="POST" action="{{ url_for('patient_visit') }}">
-        <div class="search-container">
-            <label for="patient_search">Search Existing Patient</label>
-            <input type="text" id="patient_search" placeholder="Start typing name or code...">
-            <div id="search_results"></div>
-        </div>
-        
+    <h1>Patient Visit</h1>
+
+    <div class="search-container">
+        <label for="patient_search" style="font-weight: 600; color: #555; margin-bottom: 8px; display: block;">Search Existing Patient (for Follow-up) or Register New</label>
+        <input type="text" id="patient_search" class="form-control" placeholder="Start typing name or code...">
+        <div id="search_results"></div>
+    </div>
+    
+    <div id="patient-context">
+        <p>
+            Adding follow-up for <strong><span id="context-patient-name"></span></strong>. 
+            This will be Visit #<span id="context-visit-number" style="font-weight: bold;"></span>.
+            <a href="#" id="clear-selection" style="margin-left: 10px;">Clear selection.</a>
+        </p>
+    </div>
+
+    <div class="tab-container">
+        <button class="tab-link active" onclick="openTab(event, 'StaffSection')"><i class="fa-solid fa-user-pen"></i> Staff Section</button>
+        <button class="tab-link" onclick="openTab(event, 'DoctorSection')"><i class="fa-solid fa-user-doctor"></i> Doctor Section</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('patient_visit') }}" id="patient_form">
         <input type="hidden" name="patient_id" id="patient_id">
         
-        <div id="patient-context" style="display: none;">
-            <p>
-                Adding follow-up for <strong><span id="context-patient-name"></span></strong>. 
-                Visit #<span id="context-visit-number" style="font-weight: bold;"></span>.
-            </p>
+        <div id="StaffSection" class="tab-content" style="display: block;">
+            <h3>Patient Information & Vitals</h3>
+            <div class="form-grid">
+                <div class="form-group"><label for="name">Name</label><input type="text" id="name" name="name" required></div>
+                <div class="form-group"><label for="age">Age</label><input type="number" id="age" name="age" required></div>
+                <div class="form-group"><label for="gender">Gender</label><select id="gender" name="gender" required><option value="" disabled selected>-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+                <div class="form-group"><label for="mobile_number">Mobile Number</label><input type="text" id="mobile_number" name="mobile_number"></div>
+                <div class="form-group"><label for="height">Height (cm)</label><input type="number" step="0.1" id="height" name="height"></div>
+                <div class="form-group"><label for="weight">Weight (kg)</label><input type="number" step="0.1" id="weight" name="weight"></div>
+                <div class="form-group"><label for="blood_pressure">Blood Pressure</label><input type="text" id="blood_pressure" name="blood_pressure" placeholder="e.g., 120/80"></div>
+                <div class="form-group"><label for="pulse_rate">Pulse Rate (bpm)</label><input type="number" id="pulse_rate" name="pulse_rate"></div>
+                <div class="form-group"><label for="temperature">Temperature (°C)</label><input type="number" step="0.1" id="temperature" name="temperature"></div>
+                <div class="form-group"><label for="bmi">Calculated BMI</label><input type="text" id="bmi" name="bmi" readonly></div>
+                <div class="form-group"><label for="bsa">Calculated BSA</label><input type="text" id="bsa" name="bsa" readonly></div>
+            </div>
+            <button type="submit" class="btn-submit">Save Visit</button>
+    
         </div>
 
-        <h3>Clinical Details</h3>
-        <div class="form-group">
-            <textarea id="complaints" name="complaints" rows="3" placeholder="Current Complaints"></textarea>
-        </div>
-        <div class="form-group">
-            <textarea id="examination_findings" name="examination_findings" rows="4" placeholder="Current Examination Findings"></textarea>
-        </div>
-        <div class="form-group">
-            <textarea id="diagnosis" name="diagnosis" rows="2" placeholder="Current Diagnosis"></textarea>
-        </div>
-        <div class="form-group">
-            <textarea id="updated_treatment_plan" name="updated_treatment_plan" rows="4" placeholder="New/Updated Treatment Plan"></textarea>
-        </div>
+        <div id="DoctorSection" class="tab-content">
+            <h3>Clinical Examination</h3>
+            
+            <div class="vitals-display">
+                <h5>Vitals Summary (from Staff Section)</h5>
+                <p><strong>BP:</strong> <span id="display_bp">N/A</span></p>
+                <p><strong>Pulse:</strong> <span id="display_pulse">N/A</span> bpm</p>
+                <p><strong>Temp:</strong> <span id="display_temp">N/A</span> °C</p>
+                <p><strong>BMI:</strong> <span id="display_bmi">N/A</span></p>
+                <p><strong>BSA:</strong> <span id="display_bsa">N/A</span></p>
+            </div>
 
+            <div class="form-group" id="treatment-history-container" style="display: none;">
+                <label>Treatment History</label>
+                <div id="treatment-history-content" class="history-box"><p>Loading history...</p></div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;"><label for="complaints">Current Complaints</label><textarea id="complaints" name="complaints" rows="3"></textarea></div>
+                <div class="form-group" style="grid-column: 1 / -1;"><label for="examination_findings">Current Examination Findings</label><textarea id="examination_findings" name="examination_findings" rows="4"></textarea></div>
+                <div class="form-group" style="grid-column: 1 / -1;"><label for="diagnosis">Current Diagnosis</label><textarea id="diagnosis" name="diagnosis" rows="2"></textarea></div>
+                <div class="form-group" style="grid-column: 1 / -1;"><label for="updated_treatment_plan">New/Updated Treatment Plan</label><textarea id="updated_treatment_plan" name="updated_treatment_plan" rows="4"></textarea></div>
+
+                <div class="form-group">
+                    <label for="affected_bsa_percentage">Affected BSA (%)</label>
+                    <input type="number" step="0.1" id="affected_bsa_percentage" name="affected_bsa_percentage" class="form-control">
+                </div>
+            </div>
+        
         <button type="submit" class="btn-submit">Save Visit</button>
     </form>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    // --- ELEMENT SELECTORS ---
+    const form = document.getElementById('patient_form');
     const searchInput = document.getElementById('patient_search');
     const resultsDiv = document.getElementById('search_results');
     const patientContext = document.getElementById('patient-context');
     const contextName = document.getElementById('context-patient-name');
     const contextVisitNumber = document.getElementById('context-visit-number');
-    const patientIdInput = document.getElementById('patient_id');
+    const clearLink = document.getElementById('clear-selection');
+    const historyContainer = document.getElementById('treatment-history-container');
+    const historyContent = document.getElementById('treatment-history-content');
+    
+    // Vitals Inputs (Staff Section)
+    const heightInput = document.getElementById('height');
+    const weightInput = document.getElementById('weight');
+    const bpInput = document.getElementById('blood_pressure');
+    const pulseInput = document.getElementById('pulse_rate');
+    const tempInput = document.getElementById('temperature');
+    
+    // Vitals Outputs
+    const bmiInput = document.getElementById('bmi');
+    const bsaInput = document.getElementById('bsa');
+    const bpDisplay = document.getElementById('display_bp');
+    const pulseDisplay = document.getElementById('display_pulse');
+    const tempDisplay = document.getElementById('display_temp');
+
+    // --- CORE FUNCTIONS ---
+    window.openTab = function(evt, tabName) {
+        document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
+        document.querySelectorAll(".tab-link").forEach(link => link.classList.remove("active"));
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.classList.add("active");
+    };
+
+    function calculateMetrics() {
+        const weight = parseFloat(weightInput.value);
+        const height = parseFloat(heightInput.value);
+        bmiInput.value = (weight > 0 && height > 0) ? (weight / ((height / 100) ** 2)).toFixed(2) : '';
+        bsaInput.value = (weight > 0 && height > 0) ? Math.sqrt((height * weight) / 3600).toFixed(2) : '';
+    }
+
+    function updateVitalsDisplay() {
+        bpDisplay.textContent = bpInput.value || 'N/A';
+        pulseDisplay.textContent = pulseInput.value || 'N/A';
+        tempDisplay.textContent = tempInput.value || 'N/A';
+    }
+    
+    function resetFormToNewPatient() {
+        form.reset();
+        form.patient_id.value = '';
+        patientContext.style.display = 'none';
+        historyContainer.style.display = 'none';
+        ['name', 'age', 'gender', 'mobile_number', 'height', 'weight'].forEach(name => form[name].readOnly = false);
+        document.querySelector("#StaffSection h3").textContent = "Patient Information & Vitals";
+        updateVitalsDisplay();
+        calculateMetrics();
+    }
+
+    function displayTreatmentHistory(history) {
+        historyContent.innerHTML = '';
+        if (!history.initial_visit && history.follow_ups.length === 0) {
+            historyContent.innerHTML = '<p>No past history found.</p>';
+            return;
+        }
+        if (history.initial_visit) {
+            const iv = history.initial_visit;
+            const visitDate = new Date(iv.date_of_registration).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'});
+            historyContent.innerHTML += `<div class="visit-entry"><h5>Initial Visit (${visitDate})</h5><p><b>Diagnosis:</b> ${iv.diagnosis || 'N/A'}</p><p><b>Complaints:</b> ${iv.complaints || 'N/A'}</p></div>`;
+        }
+        history.follow_ups.forEach(visit => {
+            const visitDate = new Date(visit.visit_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'});
+            historyContent.innerHTML += `<div class="visit-entry"><h5>Follow-up (${visitDate})</h5><p><b>Complaints:</b> ${visit.updated_complaints || 'N/A'}</p></div>`;
+        });
+    }
 
     async function selectPatient(patient) {
-        patientIdInput.value = patient.id;
+        form.patient_id.value = patient.id;
+        ['name', 'age', 'gender', 'mobile_number'].forEach(name => {
+            form[name].value = patient[name] || '';
+            form[name].readOnly = true;
+        });
+        form.height.value = patient.initial_height || '';
+        form.weight.value = patient.initial_weight || '';
+        calculateMetrics();
+        ['complaints', 'examination_findings', 'diagnosis', 'updated_treatment_plan'].forEach(name => form[name].value = '');
+        
         contextName.textContent = `${patient.patient_code} - ${patient.name}`;
         contextVisitNumber.textContent = patient.visit_count + 1;
         patientContext.style.display = 'block';
-        searchInput.value = `${patient.patient_code} - ${patient.name}`;
-        resultsDiv.innerHTML = '';
+        searchInput.value = '';
         resultsDiv.style.display = 'none';
+        
+        historyContainer.style.display = 'block';
+        historyContent.innerHTML = '<p>Loading history...</p>';
+        const response = await fetch(`/api/patient_history/${patient.id}`);
+        const historyData = await response.json();
+        displayTreatmentHistory(historyData);
     }
 
+    // --- EVENT LISTENERS ---
+    heightInput.addEventListener('input', calculateMetrics);
+    weightInput.addEventListener('input', calculateMetrics);
+    bpInput.addEventListener('input', updateVitalsDisplay);
+    pulseInput.addEventListener('input', updateVitalsDisplay);
+    tempInput.addEventListener('input', updateVitalsDisplay);
+    clearLink.addEventListener('click', (e) => { e.preventDefault(); resetFormToNewPatient(); });
+    
     searchInput.addEventListener('input', async function() {
         const query = this.value;
         if (query.length < 2) {
-            resultsDiv.innerHTML = ''; 
-            resultsDiv.style.display = 'none'; 
-            return;
+            resultsDiv.innerHTML = ''; resultsDiv.style.display = 'none'; return;
         }
         const response = await fetch(`/api/search_patients?q=${query}`);
         const patients = await response.json();
@@ -75,10 +207,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             resultsDiv.style.display = 'block';
         } else {
-            resultsDiv.innerHTML = '<div class="search-result-item">No patients found.</div>';
-            resultsDiv.style.display = 'block';
+            resultsDiv.style.display = 'none';
         }
     });
+
+    // --- INITIAL STATE ---
+    resetFormToNewPatient();
 });
 </script>
 {% endblock %}
