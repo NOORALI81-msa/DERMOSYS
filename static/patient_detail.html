@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block content %}
+
+   
+
+<div class="patient-header">
+    <div class="info">
+        <h1>{{ patient.name }}</h1>
+        <div class="patient-code">{{ patient.patient_code }}</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        {% if admission %}
+            <span class="status-badge admitted">Admitted: Bed {{ admission.bed_number }}</span>
+        {% endif %}
+        <div class="header-actions">
+            <button class="actions-button">Actions <i class="fa-solid fa-caret-down"></i></button>
+            <div class="actions-dropdown">
+                <a href="{{ url_for('patient_visit', patient_id=patient.id) }}"><i class="fa-solid fa-stethoscope"></i> Add Follow-up</a>
+                <a href="{{ url_for('create_prescription', patient_id=patient.id) }}"><i class="fa-solid fa-pills"></i> Create Prescription</a>
+                <a href="{{ url_for('request_lab_report', patient_id=patient.id) }}"><i class="fa-solid fa-flask-vial"></i> Request Lab Report</a>
+                <button onclick="openModal('patientInfoModal')"><i class="fa-solid fa-user-pen"></i> Edit Patient Info</button>
+                <button onclick="openModal('qrCodeModal')"><i class="fa-solid fa-qrcode"></i> Mobile Upload QR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav class="detail-nav">
+    <a class="tab-link active" data-tab="overview">Overview</a>
+    <a class="tab-link" data-tab="history">Visit History</a>
+    <a class="tab-link" data-tab="prescriptions">Prescriptions</a>
+    <a class="tab-link" data-tab="gallery">Image Gallery</a>
+    <a class="tab-link" data-tab="reports">Lab Reports</a>
+    {% if admission %}
+    <a class="tab-link" data-tab="inpatient">In-Patient Details</a>
+    {% endif %}
+</nav>
+
+<div class="tab-content-container">
+    <div id="overview" class="tab-pane active">
+        <div class="data-section">
+            <h2><i class="fa-solid fa-circle-info"></i> Demographics & Vitals</h2>
+            <div class="overview-grid">
+                <div class="overview-item"><strong>Age</strong> <span>{{ patient.age }}</span></div>
+                <div class="overview-item"><strong>Gender</strong> <span>{{ patient.gender }}</span></div>
+                <div class="overview-item"><strong>Mobile</strong> <span>{{ patient.mobile_number or 'N/A' }}</span></div>
+                <div class="overview-item"><strong>Registered</strong> <span>{{ patient.date_of_registration.strftime('%d %b %Y') }}</span></div>
+            </div>
+            <div class="vitals-grid">
+                <div class="overview-item"><strong>Height</strong> <span>{{ patient.initial_height or 'N/A' }} cm</span></div>
+                <div class="overview-item"><strong>Weight</strong> <span>{{ patient.initial_weight or 'N/A' }} kg</span></div>
+                <div class="overview-item"><strong>Temperature</strong> <span>{{ "%.1f"|format(patient.initial_temperature|float) if patient.initial_temperature else 'N/A' }} °C</span></div>
+                <div class="overview-item"><strong>Blood Pressure</strong> <span>{{ patient.initial_blood_pressure or 'N/A' }}</span></div>
+                <div class="overview-item"><strong>Heart Rate</strong> <span>{{ patient.initial_heart_rate or 'N/A' }} bpm</span></div>
+                <div class="overview-item"><strong>BMI</strong> <span>{{ "%.2f"|format(patient.initial_bmi|float) if patient.initial_bmi else 'N/A' }}</span></div>
+                <div class="overview-item"><strong>BSA</strong> <span>{{ "%.2f"|format(patient.initial_bsa|float) if patient.initial_bsa else 'N/A' }}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="history" class="tab-pane">
+        <div class="history-layout">
+            <div class="visit-list-container">
+                <div class="visit-list-item" 
+                     data-visit-type="Initial Registration"
+                     data-visit-date="{{ patient.date_of_registration.strftime('%d %b %Y') }}"
+                     data-diagnosis="{{ patient.diagnosis or 'N/A' }}"
+                     data-complaints="{{ patient.complaints or 'N/A' }}"
+                     data-modal-id="initialVisitModal">
+                    <div class="icon"><i class="fa-solid fa-file-medical"></i></div>
+                    <div class="info">
+                        <span>Initial Registration</span>
+                        <small>{{ patient.date_of_registration.strftime('%d %b %Y') }}</small>
+                    </div>
+                </div>
+                {% for visit in followup_visits %}
+                <div class="visit-list-item"
+                     data-visit-type="Follow-up Visit"
+                     data-visit-date="{{ visit.visit_date.strftime('%d %b %Y') }}"
+                     data-diagnosis="{{ visit.diagnosis or 'N/A' }}"
+                     data-complaints="{{ visit.updated_complaints or 'N/A' }}"
+                     data-visit-id="{{ visit.id }}">
+                    <div class="icon"><i class="fa-solid fa-stethoscope"></i></div>
+                    <div class="info">
+                        <span>Follow-up</span>
+                        <small>{{ visit.visit_date.strftime('%d %b %Y') }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="visit-detail-view" class="visit-detail-container">
+                </div>
+        </div>
+    </div>
+    
+    <div id="prescriptions" class="tab-pane">
+        <div class="data-section">
+            <h2><i class="fa-solid fa-pills"></i> Prescription History</h2>
+            {% for prescription in prescriptions %}
+            <div class="prescription-card">
+                <div class="prescription-header">Prescription from {{ prescription.prescription_date.strftime('%d %b %Y') }} by Dr. {{ prescription.doctor_name }}</div>
+                <div class="prescription-body">
+                    <table>
+                        <thead><tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Duration</th></tr></thead>
+                        <tbody>
+                            {% for item in prescription['items'] %}
+                            <tr><td>{{ item.medication_name }}</td><td>{{ item.dosage }}</td><td>{{ item.frequency }}</td><td>{{ item.duration }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-state">No prescriptions have been recorded for this patient yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div id="gallery" class="tab-pane">
+        <div class="data-section">
+            <h2><i class="fa-solid fa-images"></i> Image Gallery</h2>
+            <form action="{{ url_for('add_image', patient_id=patient.id) }}" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="file" name="file" required class="form-control">
+                <button type="submit" class="actions-button" style="flex-shrink: 0;">Upload</button>
+            </form>
+            <div class="image-grid">
+                 {% for image in images %}
+                 <div class="image-card">
+                     <a href="{{ url_for('uploaded_file', filename=image.image_filename) }}" target="_blank"><img src="{{ url_for('uploaded_file', filename=image.image_filename) }}" alt="Patient Image"></a>
+                     <form action="{{ url_for('delete_image', image_id=image.id) }}" method="POST" onsubmit="return confirm('Are you sure?');"><button type="submit" class="btn-delete-img">&times;</button></form>
+                 </div>
+                 {% else %}
+                 <p class="empty-state">No images uploaded.</p>
+                 {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div id="reports" class="tab-pane">
+        <div class="data-section">
+            <h2><i class="fa-solid fa-flask-vial"></i> Lab Reports</h2>
+            {% for report in lab_reports %}
+            <div class="list-item">
+                <div class="info">
+                    <span class="report-type">{{ report.report_type }}</span>
+                    <span class="report-date">{{ report.report_date.strftime('%d %b %Y') }}</span>
+                </div>
+                <div class="status">
+                {% if report.status == 'Completed' and report.file_path %}
+                    <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank">View Report</a>
+                {% else %}
+                    <span>{{ report.status }}</span>
+                {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-state">No lab reports found.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    {% if admission %}
+    <div id="inpatient" class="tab-pane">
+        <div class="data-section">
+            <h2><i class="fa-solid fa-bed-pulse"></i> In-Patient Details (Bed {{ admission.bed_number }})</h2>
+            <form action="{{ url_for('add_daily_note', assignment_id=admission.id) }}" method="POST">
+                <textarea name="notes" class="form-control" placeholder="Add a new progress note for today..." required rows="4"></textarea>
+                <button type="submit" class="actions-button" style="margin-top: 10px; margin-bottom: 20px;">Add Note</button>
+            </form>
+            <a href="{{ url_for('discharge_patient', assignment_id=admission.id) }}" class="actions-button" style="background-color: #e67e22;">Prepare Discharge Summary</a>
+
+            <div class="notes-history">
+                <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 1.2em; margin-top: 30px;">Notes History</h3>
+                {% for note in daily_notes %}
+                <div class="note-item">
+                    <div class="note-meta">
+                        <span><strong>Dr. {{ note.doctor_name }}</strong></span>
+                        <span>{{ note.note_date.strftime('%d %b %Y, %I:%M %p') }}</span>
+                    </div>
+                    <div class="note-content">
+                        {{ note.notes }}
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-state" style="padding: 20px 0;">No progress notes have been recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div id="qrCodeModal" class="modal-backdrop">
+    <div class="modal-content" style="text-align: center;">
+        <h2>Upload via Mobile</h2>
+        <p>Scan this code to open a secure upload page on a mobile device.</p>
+        <div id="qrcode-container" style="display: flex; justify-content: center; padding: 10px;"></div>
+        <button type="button" onclick="closeModal('qrCodeModal')" class="actions-button" style="margin-top: 20px; background-color: #7f8c8d;">Close</button>
+    </div>
+</div>
+
+<div id="patientInfoModal" class="modal-backdrop">
+    <div class="modal-content">
+        <h2>Edit Patient Information</h2>
+        <form action="{{ url_for('edit_patient', patient_id=patient.id) }}" method="POST" class="modal-form">
+            <div class="form-group"><label>Name</label><input type="text" name="name" value="{{ patient.name }}" required></div>
+            <div class="form-group"><label>Age</label><input type="number" name="age" value="{{ patient.age }}" required></div>
+            <div class="form-group"><label>Gender</label><select name="gender" required><option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option><option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option><option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option></select></div>
+            <div class="form-group"><label>Mobile Number</label><input type="text" name="mobile_number" value="{{ patient.mobile_number or '' }}"></div>
+            <div class="modal-actions"><button type="button" onclick="closeModal('patientInfoModal')" class="btn-secondary">Cancel</button><button type="submit" class="actions-button">Save Changes</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="initialVisitModal" class="modal-backdrop">
+    <div class="modal-content">
+        <h2>Edit Initial Visit Details</h2>
+        <form action="{{ url_for('edit_initial_visit', patient_id=patient.id) }}" method="POST" class="modal-form">
+            <div class="form-group"><label>Diagnosis</label><input type="text" name="diagnosis" value="{{ patient.diagnosis or '' }}"></div>
+            <div class="form-group"><label>Complaints</label><textarea name="complaints" rows="4">{{ patient.complaints or '' }}</textarea></div>
+            <div class="modal-actions"><button type="button" onclick="closeModal('initialVisitModal')" class="btn-secondary">Cancel</button><button type="submit" class="actions-button">Save Changes</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="followUpModal" class="modal-backdrop">
+    <div class="modal-content">
+        <h2>Edit Follow-up Visit</h2>
+        <form id="followUpForm" method="POST" class="modal-form">
+            <div class="form-group"><label for="followUpComplaints">Complaints</label><textarea id="followUpComplaints" name="complaints" rows="4"></textarea></div>
+            <div class="modal-actions"><button type="button" onclick="closeModal('followUpModal')" class="btn-secondary">Cancel</button><button type="submit" class="actions-button">Save Changes</button></div>
+        </form>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // --- Main Tab Navigation Logic ---
+    const mainTabs = document.querySelectorAll(".tab-link");
+    const mainPanes = document.querySelectorAll(".tab-pane");
+    mainTabs.forEach(tab => {
+        tab.addEventListener("click", function() {
+            const targetId = this.getAttribute("data-tab");
+            mainTabs.forEach(t => t.classList.remove("active"));
+            mainPanes.forEach(p => p.classList.remove("active"));
+            this.classList.add("active");
+            document.getElementById(targetId).classList.add("active");
+        });
+    });
+
+    // --- Interactive Visit History Logic ---
+    const visitListItems = document.querySelectorAll('.visit-list-item');
+    const visitDetailView = document.getElementById('visit-detail-view');
+    function displayVisitDetails(element) {
+        visitListItems.forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+        const visitType = element.dataset.visitType;
+        const visitDate = element.dataset.visitDate;
+        const diagnosis = element.dataset.diagnosis;
+        const complaints = element.dataset.complaints;
+        const visitId = element.dataset.visitId;
+        const modalId = element.dataset.modalId;
+        let actionsHtml = '';
+        if (visitId) {
+            actionsHtml = `<div class="actions"><button class="btn-edit-sm" onclick="openFollowUpModal('${visitId}', \`${complaints}\`)">Edit</button><form action="/visit/${visitId}/delete" method="POST" onsubmit="return confirm('Are you sure?');"><button type="submit" class="btn-delete">Delete</button></form></div>`;
+        } else {
+            actionsHtml = `<button class="btn-edit-sm" onclick="openModal('${modalId}')">Edit</button>`;
+        }
+        visitDetailView.innerHTML = `<div class="visit-detail-header"><h3>${visitType}</h3>${actionsHtml}</div><div class="visit-detail-body"><p><small>${visitDate}</small></p><p><strong>Diagnosis:</strong> ${diagnosis}</p><p><strong>Complaints:</strong> ${complaints}</p></div>`;
+    }
+    visitListItems.forEach(item => {
+        item.addEventListener('click', () => displayVisitDetails(item));
+    });
+    if (visitListItems.length > 0) {
+        displayVisitDetails(visitListItems[0]);
+    } else {
+        if(visitDetailView) { visitDetailView.innerHTML = '<p class="empty-state">No visit history recorded.</p>'; }
+    }
+
+    // --- Modal and QR Code Logic ---
+    let qrCodeGenerated = false;
+    function generateQrCode() {
+        if (!qrCodeGenerated) {
+            const urlToEncode = "{{ url_for('mobile_upload', patient_id=patient.id, _external=True) }}";
+            new QRCode(document.getElementById("qrcode-container"), { text: urlToEncode, width: 200, height: 200 });
+            qrCodeGenerated = true;
+        }
+    }
+    window.openModal = function(modalId) {
+        if (modalId === 'qrCodeModal') generateQrCode();
+        document.getElementById(modalId).style.display = 'flex';
+    }
+    window.closeModal = function(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    window.openFollowUpModal = function(visitId, complaints) {
+        const form = document.getElementById('followUpForm');
+        form.action = `/visit/${visitId}/edit`;
+        document.getElementById('followUpComplaints').value = complaints;
+        openModal('followUpModal');
+    }
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-backdrop')) {
+            event.target.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

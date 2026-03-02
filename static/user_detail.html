@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .user-detail-card {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        max-width: 600px;
+        margin: 20px auto;
+    }
+    .user-detail-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+    }
+    .user-detail-header h1 { margin: 0; }
+    .user-detail-body .detail-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.1em;
+        padding: 15px 0;
+    }
+    .status-badge {
+        padding: 5px 12px; border-radius: 15px;
+        font-weight: bold; color: white; font-size: 0.9em;
+    }
+    .status-badge.active { background-color: #27ae60; }
+    .status-badge.inactive { background-color: #e74c3c; }
+    .btn-deactivate {
+        background-color: #e74c3c; color: white; border: none;
+        padding: 10px 20px; border-radius: 5px; cursor: pointer;
+        font-weight: bold; width: 100%; margin-top: 20px;
+        font-size: 1em;
+    }
+    .btn-activate {
+        background-color: #27ae60; color: white; border: none;
+        padding: 10px 20px; border-radius: 5px; cursor: pointer;
+        font-weight: bold; width: 100%; margin-top: 20px;
+        font-size: 1em;
+    }
+</style>
+
+<div class="page-header">
+    <h1>User Profile</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn-add" style="background-color: #7f8c8d;"><i class="fa-solid fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="user-detail-card">
+    <div class="user-detail-header">
+        <h1>{{ user.username }}</h1>
+    </div>
+    <div class="user-detail-body">
+        <div class="detail-item">
+            <strong>Role:</strong>
+            <span>{{ user.role_name | capitalize }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Account Status:</strong>
+            <span>
+                {% if user.is_active %}
+                    <span class="status-badge active">Active</span>
+                {% else %}
+                    <span class="status-badge inactive">Inactive</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <form action="{{ url_for('toggle_user_status', user_id=user.id) }}" method="POST">
+        {% if user.is_active %}
+            <button type="submit" class="btn-deactivate">
+                <i class="fas fa-user-slash"></i> Deactivate User
+            </button>
+        {% else %}
+            <button type="submit" class="btn-activate">
+                <i class="fas fa-user-check"></i> Activate User
+            </button>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

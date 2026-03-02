@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    
+</style>
+
+<div class="page-header">
+    <h1>Dashboard</h1>
+</div>
+
+<div class="stats-grid">
+    <a href="{{ url_for('list_patients') }}" class="stat-card">
+        <div class="icon patients"><i class="fa-solid fa-hospital-user"></i></div>
+        <div class="info">
+            <h3>{{ stats.total_patients }}</h3>
+            <p>Total Patients</p>
+        </div>
+    </a>
+    <a href="{{ url_for('bed_management') }}" class="stat-card">
+        <div class="icon beds"><i class="fa-solid fa-bed-pulse"></i></div>
+        <div class="info">
+            <h3>{{ stats.occupied_beds }} / {{ stats.total_beds }}</h3>
+            <p>Occupied Beds</p>
+        </div>
+    </a>
+    <a href="{{ url_for('list_lab_reports') }}" class="stat-card">
+        <div class="icon reports"><i class="fa-solid fa-flask-vial"></i></div>
+        <div class="info">
+            <h3>{{ stats.pending_reports }}</h3>
+            <p>Pending Lab Reports</p>
+        </div>
+    </a>
+    <a href="{{ url_for('list_follow_up_visits') }}" class="stat-card">
+        <div class="icon visits"><i class="fa-solid fa-stethoscope"></i></div>
+        <div class="info">
+            <h3>{{ stats.follow_up_visits }}</h3>
+            <p>Follow-up Visits</p>
+        </div>
+    </a>
+</div>
+
+<!-- Charts Section -->
+<div class="charts-grid">
+    <div class="chart-container">
+        <h2>Disease Frequency</h2>
+        <canvas id="diseaseChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <h2>Gender Distribution</h2>
+        <canvas id="genderChart"></canvas>
+    </div>
+</div>
+
+<!-- Hidden data for charts -->
+<script type="application/json" id="diseaseData">{{ disease_data | tojson }}</script>
+<script type="application/json" id="genderData">{{ gender_data | tojson }}</script>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Disease Frequency Chart (Bar Chart)
+        const diseaseData = JSON.parse(document.getElementById('diseaseData').textContent);
+        const diseaseCtx = document.getElementById('diseaseChart').getContext('2d');
+        new Chart(diseaseCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(diseaseData),
+                datasets: [{
+                    label: 'Number of Cases',
+                    data: Object.values(diseaseData),
+                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Gender Distribution Chart (Doughnut Chart)
+        const genderData = JSON.parse(document.getElementById('genderData').textContent);
+        const genderCtx = document.getElementById('genderChart').getContext('2d');
+        new Chart(genderCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(genderData),
+                datasets: [{
+                    data: Object.values(genderData),
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(231, 76, 60, 0.8)',
+                        'rgba(155, 89, 182, 0.8)'
+                    ],
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

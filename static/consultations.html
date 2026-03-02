@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    
+
+<div class="page-header">
+    <h1>Consultation Requests</h1>
+    <a href="{{ url_for('request_consultation') }}" class="btn-add"><i class="fa-solid fa-plus"></i> New Request</a>
+</div>
+
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Referred To</th>
+                <th>Reason</th>
+                <th>Requested By</th>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>{{ req.patient_name }} ({{ req.patient_code }})</td>
+                <td>{{ req.department }}</td>
+                <td>{{ req.reason_for_referral }}</td>
+                <td>Dr. {{ req.doctor_name }}</td>
+                <td>{{ req.request_date.strftime('%d %b %Y') }}</td>
+                <td><span class="status-{{ req.status.lower() }}">{{ req.status }}</span></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px;">No consultation requests have been made.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+    
+
+<div class="form-container">
+    <h1>Request Consultation</h1>
+    <form method="POST">
+        <div class="form-group">
+            <label for="patient_id">Select Patient</label>
+            <select name="patient_id" id="patient_id" class="form-control" required>
+                <option value="" disabled selected>-- Please select a patient --</option>
+                {% for patient in patients %}
+                    <option value="{{ patient.id }}">{{ patient.patient_code }} - {{ patient.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="department">Department for Referral</label>
+            <select name="department" id="department" class="form-control" required>
+                <option value="" disabled selected>-- Select Department --</option>
+                {% for group, depts in departments.items() %}
+                    <optgroup label="{{ group }}">
+                        {% for dept in depts %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="reason_for_referral">Reason for Referral</label>
+            <textarea name="reason_for_referral" id="reason_for_referral" class="form-control" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn-submit">Submit Request</button>
+    </form>
+</div>
+{% endblock %}

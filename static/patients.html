@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    
+
+<div class="page-header">
+    <h1>Patient Records</h1>
+    <a href="{{ url_for('patient_visit') }}" class="btn"><i class="fa-solid fa-plus"></i> Add New Visit</a>
+</div>
+
+<!-- Search and Export Form -->
+<form method="GET" action="{{ url_for('list_patients') }}" class="search-export-form">
+    <div class="form-group"><label for="patient_id">Patient ID/Code</label><input type="text" name="patient_id" id="patient_id" value="{{ search_params.patient_id or '' }}"></div>
+    <div class="form-group"><label for="mobile">Mobile Number</label><input type="text" name="mobile" id="mobile" value="{{ search_params.mobile or '' }}"></div>
+    <div class="form-group"><label for="age_from">Age From</label><input type="number" name="age_from" id="age_from" value="{{ search_params.age_from or '' }}"></div>
+    <div class="form-group"><label for="age_to">Age To</label><input type="number" name="age_to" id="age_to" value="{{ search_params.age_to or '' }}"></div>
+    <div class="form-group"><label for="date_from">Date From</label><input type="date" name="date_from" id="date_from" value="{{ search_params.date_from or '' }}"></div>
+    <div class="form-group"><label for="date_to">Date To</label><input type="date" name="date_to" id="date_to" value="{{ search_params.date_to or '' }}"></div>
+    <div style="display: flex; gap: 10px;">
+        <button type="submit" class="btn">Search</button>
+        <a href="{{ url_for('download_patient_data', **search_params) }}" class="btn" style="background-color: #27ae60;">Download CSV</a>
+    </div>
+</form>
+
+<div class="patients-table-container">
+    <table class="patients-table">
+        <thead>
+            <tr>
+                <th>Patient Code</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Registration Date</th>
+                <th>Diagnosis</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for patient in patients %}
+            <tr>
+                <td>{{ patient.patient_code }}</td>
+                <td>{{ patient.name }}</td>
+                <td>{{ patient.age }}</td>
+                <td>{{ patient.gender }}</td>
+                <td>{{ patient.date_of_registration.strftime('%Y-%m-%d') }}</td>
+                <td>{{ patient.diagnosis or 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" class="action-link">View Details</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px;">No patients found for the selected criteria.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

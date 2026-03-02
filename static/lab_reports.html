@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    
+</style>
+
+<div class="page-header">
+    <h1>Diagnostic Reports</h1>
+    <a href="{{ url_for('request_lab_report') }}" class="btn-add"><i class="fa-solid fa-plus"></i> Request New Report</a>
+</div>
+
+{% if grouped_reports %}
+    {% for department, reports_in_dept in grouped_reports.items() %}
+    <div class="department-section">
+        <h2 class="department-header">{{ department }}</h2>
+        <div class="table-container">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Report Type</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions / Upload</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports_in_dept %}
+                    <tr>
+                        <td>{{ report.patient_name }} ({{ report.patient_code }})</td>
+                        <td>{{ report.report_type }}</td>
+                        <td>{{ report.report_date.strftime('%Y-%m-%d') }}</td>
+                        <td><span class="status-{{ report.status.lower() }}">{{ report.status }}</span></td>
+                        <td>
+                            {% if report.status == 'Pending' %}
+                                <form action="{{ url_for('upload_lab_report', report_id=report.id) }}" method="post" enctype="multipart/form-data" class="upload-form-cell">
+                                    <input type="file" name="file" class="form-control">
+                                    <textarea name="report_summary" class="form-control" placeholder="Or type/paste summary here..." rows="3"></textarea>
+                                    <button type="submit" class="btn-add" style="padding: 5px 10px;">Update</button>
+                                </form>
+                            {% else %}
+                                {% if report.file_path %}
+                                <a href="{{ url_for('uploaded_file', filename=report.file_path) }}" target="_blank" class="action-link">View File</a>
+                                {% endif %}
+                                {% if report.report_summary %}
+                                <div style="margin-top: 5px; font-size: 0.9em; white-space: pre-wrap;">{{ report.report_summary }}</div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="table-container" style="text-align: center; padding: 40px;">
+        <p>No lab reports found.</p>
+    </div>
+{% endif %}
+{% endblock %}

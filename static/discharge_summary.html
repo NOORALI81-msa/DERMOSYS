@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Discharge Summary</h1>
+    <h2>For {{ patient.name }} ({{ patient.patient_code }})</h2>
+    
+    <form method="POST" id="dischargeForm">
+        <div class="form-group">
+            <label for="final_diagnosis">Final Diagnosis</label>
+            <textarea name="final_diagnosis" id="final_diagnosis" required>{{ patient.diagnosis }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="treatment_summary">Summary of Treatment & Hospital Stay</label>
+            <textarea name="treatment_summary" id="treatment_summary" required>{{ auto_summary }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="follow_up_instructions">Medication & Follow-up Instructions</label>
+            <textarea name="follow_up_instructions" id="follow_up_instructions" required placeholder="..."></textarea>
+        </div>
+
+        <button type="button" class="btn-submit" onclick="showPreview()">
+            <i class="fa-solid fa-eye"></i> Preview Summary
+        </button>
+    </form>
+</div>
+
+<div id="previewModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-content printable-area">
+        <h2>Discharge Summary Preview</h2>
+        <p><strong>Patient:</strong> {{ patient.name }} ({{ patient.patient_code }})</p>
+        <hr>
+        
+        <h3>Final Diagnosis</h3>
+        <p id="preview_diagnosis"></p>
+
+        <h3>Treatment Summary</h3>
+        <p id="preview_treatment" style="white-space: pre-wrap;"></p>
+
+        <h3>Follow-up Instructions</h3>
+        <p id="preview_instructions" style="white-space: pre-wrap;"></p>
+
+        <div class="modal-actions no-print">
+            <button type="button" onclick="closeModal('previewModal')" class="btn-secondary">Back to Edit</button>
+            <button type="button" onclick="window.print()" class="btn-secondary"><i class="fa-solid fa-print"></i> Print</button>
+            <button type="button" onclick="submitForm()" class="btn-submit">Confirm & Save</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+<script>
+function showPreview() {
+    // 1. Get the current text from the form fields
+    const finalDiagnosis = document.getElementById('final_diagnosis').value;
+    const treatmentSummary = document.getElementById('treatment_summary').value;
+    const followUp = document.getElementById('follow_up_instructions').value;
+
+    // 2. Populate the preview modal with the text
+    document.getElementById('preview_diagnosis').textContent = finalDiagnosis;
+    document.getElementById('preview_treatment').textContent = treatmentSummary;
+    document.getElementById('preview_instructions').textContent = followUp;
+
+    // 3. Show the modal
+    document.getElementById('previewModal').style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function submitForm() {
+    // Submits the original form to save the data to the database
+    document.getElementById('dischargeForm').submit();
+}
+</script>

@@ -21,7 +21,7 @@ A comprehensive, web-based Hospital Management System (HMS) built with Flask and
 ## Technology Stack
 
 - **Backend**: Flask (Python)
-- **Database**: PostgreSQL
+- **Database**: SQLite (file-based, no server required)
 - **Frontend**: HTML, CSS, JavaScript
 - **Libraries**: Chart.js for data visualization
 
@@ -29,7 +29,7 @@ A comprehensive, web-based Hospital Management System (HMS) built with Flask and
 
 Before you begin, ensure you have the following installed on your system:
 - Python (3.7 or newer)
-- PostgreSQL
+- SQLite (comes pre-installed with Python)
 - Pip (Python Package Installer)
 
 ## Installation & Setup

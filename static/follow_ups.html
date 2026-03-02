@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    
+</style>
+
+<div class="page-header">
+    <h1>All Follow-up Visits</h1>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Visit Date</th>
+                <th>Patient Code</th>
+                <th>Patient Name</th>
+                <th>Doctor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if visits %}
+                {% for visit in visits %}
+                <tr onclick="window.location='{{ url_for('patient_detail', patient_id=visit.patient_id) }}';">
+                    <td>{{ visit.visit_date.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    <td>{{ visit.patient_code }}</td>
+                    <td>{{ visit.patient_name }}</td>
+                    <td>{{ visit.doctor_name }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">No follow-up visits found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
