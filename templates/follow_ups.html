@@ -1,40 +1,147 @@
 {% extends "base.html" %}
-
+{% block title %}Follow-up Visits{% endblock %}
 {% block content %}
-<style>
-    
-</style>
+<!DOCTYPE html>
+    <style>
+        :root {
+            --primary-color: #2c6eb5;
+            --secondary-color: #f8f9fa;
+            --accent-color: #e9ecef;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), #1a4f87);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+        }
+        
+        .page-header i {
+            font-size: 1.8rem;
+        }
+        
+        .table-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .data-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .data-table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fa-solid fa-calendar-check"></i> All Follow-up Visits</h1>
+        </div>
 
-<div class="page-header">
-    <h1>All Follow-up Visits</h1>
-</div>
-
-<div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Visit Date</th>
-                <th>Patient Code</th>
-                <th>Patient Name</th>
-                <th>Doctor</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if visits %}
-                {% for visit in visits %}
-                <tr onclick="window.location='{{ url_for('patient_detail', patient_id=visit.patient_id) }}';">
-                    <td>{{ visit.visit_date.strftime('%d %b %Y, %I:%M %p') }}</td>
-                    <td>{{ visit.patient_code }}</td>
-                    <td>{{ visit.patient_name }}</td>
-                    <td>{{ visit.doctor_name }}</td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="4" class="text-center">No follow-up visits found.</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
-</div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Visit Date</th>
+                        <th>Patient Code</th>
+                        <th>Patient Name</th>
+                        <th>Doctor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if visits %}
+                        {% for visit in visits %}
+                        <tr onclick="window.location='{{ url_for('patient_detail', patient_id=visit.patient_id) }}';">
+                            <td>{{ visit.visit_date.strftime('%d %b %Y, %I:%M %p') }}</td>
+                            <td>{{ visit.patient_code }}</td>
+                            <td>{{ visit.patient_name }}</td>
+                            <td>{{ visit.doctor_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">No follow-up visits found.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
 {% endblock %}

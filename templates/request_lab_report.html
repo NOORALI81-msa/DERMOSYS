@@ -1,38 +1,117 @@
 {% extends "base.html" %}
+
 {% block content %}
 <style>
-    
+    /* Styles for the patient search and confirmation display */
+    .search-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    #patient-name-display {
+        background-color: #e9f5ff;
+        border: 1px solid #b3d7ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 25px;
+        font-weight: bold;
+        color: #0056b3;
+    }
 </style>
 
 <div class="form-container">
-    <h1>Request Lab Report</h1>
-    <form method="POST">
+    <h1>Request New Investigation</h1>
+    <p>Search for a patient by UHID, then select and fill out the required investigation form.</p>
+
+    <!-- The form's action URL will be set by JavaScript to point to the correct blueprint -->
+    <form id="investigation-form" method="POST" action="">
+        <!-- Step 1: Search Patient by UHID -->
         <div class="form-group">
-            <label for="patient_id">Select Patient</label>
-            <select name="patient_id" id="patient_id" class="form-control" required>
-                {% for p in patients %}
-                    <option value="{{ p.id }}" {% if p.id == selected_patient_id %}selected{% endif %}>{{ p.patient_code }} - {{ p.name }}</option>
-                {% endfor %}
+            <label for="uhid_search">Search Patient by UHID</label>
+            <input type="text" id="uhid_search" name="uhid" class="form-control" placeholder="Start typing UHID to find patient..." autocomplete="off" required>
+            <input type="hidden" name="patient_id" id="patient_id">
+        </div>
+        
+        <!-- Step 2: Display Patient Name for Confirmation -->
+        <div id="patient-name-display" style="display: none;"></div>
+
+        <!-- Step 3: Choose Investigation Type -->
+        <div class="form-group">
+            <label for="request_type_select">Type of Investigation</label>
+            <select id="request_type_select" name="request_type" class="form-control" required>
+                <option value="" disabled selected>-- First, find a patient --</option>
+                <option value="radiology">Radiology Scan</option>
+                <option value="lab">Lab Test</option>
             </select>
         </div>
-        <div class="form-group">
-            <label for="department">Department</label>
-            <select name="department" id="department" class="form-control" required>
-                <option value="" disabled selected>-- Select Department --</option>
-                {% for group, depts in departments.items() %}
-                    <optgroup label="{{ group }}">
-                        {% for dept in depts %}
-                        <option value="{{ dept }}">{{ dept }}</option>
-                        {% endfor %}
-                    </optgroup>
-                {% endfor %}
-            </select>
+
+        <!-- Dynamic container for form fields -->
+        <div id="dynamic-fields-container"></div>
+
+        <div class="form-actions" style="margin-top: 25px;">
+            <button type="submit" class="btn-submit" id="submit-btn" disabled>Submit Request</button>
         </div>
-        <div class="form-group">
-            <label for="report_type">Report Type</label>
-            <input type="text" name="report_type" id="report_type" class="form-control" placeholder="e.g., Complete Blood Count, Biopsy" required>
-        </div>
-        <button type="submit" class="btn-submit">Submit Request</button>
     </form>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const uhidInput = document.getElementById('uhid_search');
+    const patientNameDisplay = document.getElementById('patient-name-display');
+    const patientIdInput = document.getElementById('patient_id');
+    const submitBtn = document.getElementById('submit-btn');
+    const investigationForm = document.getElementById('investigation-form');
+    const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
+    const requestTypeSelect = document.getElementById('request_type_select');
+
+    // Live search for UHID to find patient name and ID
+    uhidInput.addEventListener('input', async function() {
+        const query = this.value;
+        if (query.length < 3) {
+            patientNameDisplay.style.display = 'none';
+            patientIdInput.value = '';
+            submitBtn.disabled = true;
+            return;
+        }
+
+        // This fetch uses the existing API endpoint you already have in app.py
+        const response = await fetch(`{{ url_for('search_patients') }}?q=${query}`);
+        const patients = await response.json();
+        
+        if (patients.length > 0) {
+            const patient = patients[0];
+            patientIdInput.value = patient.id;
+            uhidInput.value = patient.patient_code; // Correct the UHID to the canonical version
+            patientNameDisplay.textContent = `Patient Found: ${patient.name} (${patient.patient_code})`;
+            patientNameDisplay.style.display = 'block';
+            submitBtn.disabled = false;
+        } else {
+            patientNameDisplay.textContent = 'No patient found with this UHID.';
+            patientNameDisplay.style.display = 'block';
+            patientIdInput.value = '';
+            submitBtn.disabled = true;
+        }
+    });
+
+    // Logic to show fields and, crucially, set the form's correct submission URL
+    requestTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        dynamicFieldsContainer.innerHTML = ''; // Clear previous fields
+
+        if (selectedType === 'radiology') {
+            // Set the form's action to the existing radiology blueprint route
+            investigationForm.action = "{{ url_for('radiology_api.request_scan') }}";
+            dynamicFieldsContainer.innerHTML = `
+                <div class="form-group" style="margin-top:15px;"><label>Scan Type</label><select name="radiology_scan_type" class="form-control" required><option value="" disabled selected>Select...</option><option value="CT">CT</option><option value="MR">MR</option><option value="XRAY">XRAY</option><option value="US">ULTRASOUND</option></select></div>
+                <div class="form-group" style="margin-top:15px;"><label>Body Part</label><input type="text" name="radiology_body_part" class="form-control" placeholder="e.g., BRAIN, CHEST" required oninput="this.value = this.toUpperCase()"></div>`;
+        } else if (selectedType === 'lab') {
+            // Set the form's action to the existing lab blueprint route
+            investigationForm.action = "{{ url_for('lab_api.request_lab_test') }}";
+            dynamicFieldsContainer.innerHTML = `
+                <div class="form-group" style="margin-top:15px;"><label>Test Name</label><input type="text" name="lab_test_name" class="form-control" placeholder="e.g., Complete Blood Count" required></div>
+                <div class="form-group" style="margin-top:15px;"><label>Department</label><input type="text" name="lab_department" value="Pathology" class="form-control" required></div>`;
+        }
+    });
+});
+</script>
 {% endblock %}
+
